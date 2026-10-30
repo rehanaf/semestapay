@@ -1,0 +1,43 @@
+# Root & general
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+!.env.example
+
+# Node / JS / TS
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+out/
+apps/web/*/out/
+dist/
+build/
+coverage/
+
+# PHP / Laravel
+apps/backend/vendor/
+apps/backend/storage/*.key
+apps/backend/storage/framework/cache/data/*
+apps/backend/storage/framework/sessions/*
+apps/backend/storage/framework/views/*
+apps/backend/bootstrap/cache/*
+apps/backend/.phpunit.result.cache
+
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+apps/mobile/**/.dart_tool/
+apps/mobile/**/.packages
+apps/mobile/**/.pub-cache/
+apps/mobile/**/build/
+apps/mobile/**/.flutter-plugins
+apps/mobile/**/.flutter-plugins-dependencies
+apps/mobile/**/.metadata
+packages/mobile/**/.dart_tool/
+packages/mobile/**/.packages
+packages/mobile/**/build/

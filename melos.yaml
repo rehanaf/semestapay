@@ -1,0 +1,15 @@
+name: semestapay_mobile
+packages:
+  - apps/mobile/*
+  - packages/mobile/*
+
+scripts:
+  get:
+    run: melos exec -- flutter pub get
+    description: Run 'flutter pub get' in all mobile apps and packages.
+  analyze:
+    run: melos exec -- flutter analyze .
+    description: Run 'flutter analyze' in all mobile apps and packages.
+  clean:
+    run: melos exec -- flutter clean
+    description: Clean build files in all mobile apps and packages.
