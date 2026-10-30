@@ -65,19 +65,24 @@ import {
   Search,
   Plus,
   RefreshCw,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from "lucide-react";
 
 function AdminLoginForm() {
   const { login } = useAuth();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [rememberMe, setRememberMe] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError("Email dan kata sandi wajib diisi.");
+      setError("Silakan lengkapi email dan kata sandi Anda.");
       return;
     }
     setError(null);
@@ -94,103 +99,220 @@ function AdminLoginForm() {
     }
   };
 
-  const fillDemo = () => {
-    setEmail("admin@cashless.dev");
+  const fillDemo = (roleEmail: string) => {
+    setEmail(roleEmail);
     setPassword("password");
     setError(null);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold shadow-md text-lg">
-            SP
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            SemestaPay Admin
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Pusat Kendali Operasional Terpusat (Tema Indigo Blue)
-          </p>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-muted/40 relative overflow-x-hidden">
+      {/* Background ambient lighting */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/10 blur-[130px] rounded-full" />
+        <div className="absolute -bottom-40 right-10 w-[500px] h-[350px] bg-primary/10 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="w-full max-w-md lg:max-w-4xl xl:max-w-5xl">
+        {/* MOBILE ONLY: BANNER GAMBAR DI LUAR CARD */}
+        <div className="lg:hidden mb-4 w-full h-44 sm:h-52 rounded-2xl overflow-hidden border border-border/80 shadow-md bg-slate-950">
+          <img
+            src="/login-banner.svg"
+            alt="SemestaPay Banner"
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        <Card className="shadow-lg border-border/80">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-xl">Masuk ke Konsol</CardTitle>
-            <CardDescription>
-              Gunakan akun Superadmin atau Administrator berwenang
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
+        {/* CARD UTAMA */}
+        <div className="rounded-2xl lg:rounded-3xl border border-border/80 bg-card shadow-xl lg:shadow-2xl overflow-hidden lg:grid lg:grid-cols-2">
+          {/* DESKTOP ONLY: BANNER GAMBAR DI DALAM CARD (SISI KIRI) */}
+          <div className="hidden lg:block relative bg-slate-950">
+            <img
+              src="/login-banner.svg"
+              alt="SemestaPay Banner"
+              className="w-full h-full object-cover absolute inset-0"
+            />
+          </div>
+
+          {/* SISI KANAN (Desktop) / KONTEN CARD (Mobile): FORM LOGIN */}
+          <div className="p-6 sm:p-8 lg:p-10 flex flex-col space-y-5">
+            {/* Top Brand Header & Greeting */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between pb-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-8 rounded-lg bg-primary text-primary-foreground font-bold flex items-center justify-center text-xs shadow-sm">
+                    <ShieldCheck className="size-4" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-sm tracking-tight text-foreground leading-none">
+                      SemestaPay
+                    </span>
+                    <p className="text-[10px] text-muted-foreground">Admin Console</p>
+                  </div>
+                </div>
+
+                <Badge variant="secondary" className="text-[10px] font-semibold uppercase">
+                  SUPERADMIN
+                </Badge>
+              </div>
+
+              <div>
+                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+                  Selamat Datang
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Masuk dengan akun berwenang untuk mengakses konsol admin
+                </p>
+              </div>
+            </div>
+
+            {/* Form Section */}
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               {error && (
-                <div className="flex items-center gap-2.5 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                  <AlertCircle className="size-4 shrink-0" />
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm leading-snug">
+                  <AlertCircle className="size-4 shrink-0 mt-0.5" />
                   <p>{error}</p>
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Administrator</Label>
+              {/* Email Input */}
+              <div className="space-y-1">
+                <Label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">
+                  Email Administrator
+                </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                  <Mail className="absolute left-3.5 top-3.5 size-4 text-muted-foreground pointer-events-none" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="nama@semestapay.id"
-                    className="pl-9"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="h-11 pl-10 text-sm rounded-xl border-border/80 bg-background focus:bg-background transition-all shadow-xs"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Kata Sandi</Label>
+              {/* Password Input */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-xs sm:text-sm font-medium text-foreground">
+                    Kata Sandi
+                  </Label>
+                  <a
+                    href="#forgot"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      alert("Silakan hubungi Superadmin untuk reset kata sandi akun Anda.");
+                    }}
+                    className="text-xs font-semibold text-primary hover:underline transition-colors"
+                  >
+                    Lupa sandi?
+                  </a>
+                </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                  <Lock className="absolute left-3.5 top-3.5 size-4 text-muted-foreground pointer-events-none" />
                   <Input
                     id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-9"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Masukkan kata sandi"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="h-11 pl-10 pr-11 text-sm rounded-xl border-border/80 bg-background focus:bg-background transition-all shadow-xs font-mono"
                   />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
                 </div>
               </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-                onClick={fillDemo}
-              >
-                Gunakan Akun Demo (admin@cashless.dev)
-              </Button>
-            </CardContent>
+              {/* Remember Me */}
+              <div className="flex items-center gap-2 pt-0.5">
+                <input
+                  type="checkbox"
+                  id="remember"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="size-4 rounded-md border-border text-primary focus:ring-primary cursor-pointer accent-primary"
+                />
+                <Label htmlFor="remember" className="text-xs text-muted-foreground cursor-pointer font-normal select-none">
+                  Ingat sesi masuk di perangkat ini
+                </Label>
+              </div>
 
-            <CardFooter className="flex flex-col gap-3">
-              <Button type="submit" className="w-full cursor-pointer" disabled={submitting}>
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="w-full h-11 text-sm font-semibold rounded-xl shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all cursor-pointer gap-2 mt-1"
+              >
                 {submitting ? (
                   <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    <Loader2 className="size-4 animate-spin" />
                     Memverifikasi Hak Akses...
                   </>
                 ) : (
                   <>
                     Masuk ke Konsol Admin
-                    <ArrowRight className="ml-2 size-4" />
+                    <ArrowRight className="size-4" />
                   </>
                 )}
               </Button>
-            </CardFooter>
-          </form>
-        </Card>
+
+              {/* Divider Akun Demo */}
+              <div className="relative py-1">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border/60" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2.5 text-muted-foreground font-medium text-[11px]">
+                    Uji Coba Demo Instan
+                  </span>
+                </div>
+              </div>
+
+              {/* Demo Quick-Fill Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 text-xs font-semibold rounded-xl border-border/80 hover:bg-primary/5 hover:border-primary/40 cursor-pointer gap-1.5"
+                  onClick={() => fillDemo("admin@cashless.dev")}
+                >
+                  <Sparkles className="size-3.5 text-amber-500" />
+                  Superadmin
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 text-xs font-semibold rounded-xl border-border/80 hover:bg-primary/5 hover:border-primary/40 cursor-pointer gap-1.5"
+                  onClick={() => fillDemo("operator@cashless.dev")}
+                >
+                  <Sparkles className="size-3.5 text-emerald-500" />
+                  Operator
+                </Button>
+              </div>
+            </form>
+
+            {/* Footer Navigation Link */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/60">
+              <a href="https://pay.zet.web.id" className="hover:text-foreground transition-colors flex items-center gap-1">
+                ← Portal SemestaPay
+              </a>
+              <span className="flex items-center gap-1 text-[11px]">
+                <ShieldCheck className="size-3 text-emerald-600" />
+                TLS 1.3 Terenkripsi
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
