@@ -198,6 +198,56 @@ export interface TransactionRecord {
   note?: string;
 }
 
+export interface CardReadResponse {
+  card: {
+    uid: string;
+    status: string;
+  };
+  student: {
+    id: number;
+    name: string;
+    nis: string;
+    status: string;
+    class?: string;
+  };
+  wallet: {
+    balance: number;
+    status: string;
+  };
+  daily_used: number;
+  daily_limit: number;
+}
+
+export interface TapPaymentPayload {
+  card_uid: string;
+  outlet_code: string;
+  amount: number;
+  note?: string;
+  pin?: string;
+  items?: { item_id: number; quantity: number }[];
+  idempotency_key: string;
+}
+
+export interface TapPaymentResponse {
+  transaction_id: string;
+  card_uid: string;
+  student: {
+    id: number;
+    name: string;
+    nis: string;
+  };
+  merchant: string;
+  outlet: string;
+  amount: number;
+  balance_after: number;
+  items?: {
+    item_id: number;
+    name: string;
+    quantity: number;
+    price: number;
+  }[];
+}
+
 export const appApi = {
   async getItems(search?: string): Promise<{ data: MenuItem[] }> {
     const q = search ? `?search=${encodeURIComponent(search)}` : "";
@@ -226,5 +276,17 @@ export const appApi = {
   async getTransactions(): Promise<{ data: TransactionRecord[] }> {
     return apiFetch<{ data: TransactionRecord[] }>("/transactions");
   },
+
+  async readCard(uid: string): Promise<CardReadResponse> {
+    return apiFetch<CardReadResponse>(`/card/read/${encodeURIComponent(uid)}`);
+  },
+
+  async payTap(payload: TapPaymentPayload): Promise<TapPaymentResponse> {
+    return apiFetch<TapPaymentResponse>("/payments/tap", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
 };
+
 

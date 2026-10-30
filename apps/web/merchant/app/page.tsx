@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { appApi, MenuItem, TransactionRecord } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ import {
   X,
   CreditCard,
   DollarSign,
+  Radio,
 } from "lucide-react";
 
 function MerchantLoginForm() {
@@ -445,6 +447,13 @@ function MerchantDashboardView() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link href="/transaksi">
+              <Button size="sm" className="gap-1.5 text-xs font-semibold cursor-pointer shadow-sm">
+                <Radio className="size-3.5" />
+                Buka Kasir Tap
+              </Button>
+            </Link>
+
             <Button
               variant="outline"
               size="sm"
@@ -620,8 +629,17 @@ function MerchantDashboardView() {
                       <CardDescription>Pintasan transaksi & menu</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
+                      <Link href="/transaksi" className="block">
+                        <Button
+                          variant="default"
+                          className="w-full justify-start text-xs font-semibold gap-1.5 cursor-pointer bg-primary text-primary-foreground"
+                        >
+                          <Radio className="size-3.5" />
+                          Mulai Transaksi Tap (3 Langkah)
+                        </Button>
+                      </Link>
                       <Button
-                        variant="default"
+                        variant="outline"
                         className="w-full justify-start text-xs cursor-pointer"
                         onClick={() => {
                           setActiveTab("menu");
@@ -782,9 +800,17 @@ function MerchantDashboardView() {
                     Histori pembayaran instan via kartu RFID santri hari ini
                   </CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {transactions.length} Transaksi Terdeteksi
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className="text-xs">
+                    {transactions.length} Transaksi Terdeteksi
+                  </Badge>
+                  <Link href="/transaksi">
+                    <Button size="sm" className="gap-1.5 text-xs font-semibold cursor-pointer">
+                      <Radio className="size-3.5" />
+                      Transaksi Baru
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent>
                 <Table>
