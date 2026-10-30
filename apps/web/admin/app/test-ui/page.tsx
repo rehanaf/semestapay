@@ -76,18 +76,18 @@ export default function TestUiLoginPage() {
         {/* Desktop: Banner gambar (kiri) & login (kanan) di DALAM card */}
         {/* Mobile: Hanya membungkus form login                       */}
         {/* ======================================================== */}
-        <div className="rounded-2xl lg:rounded-3xl border border-border/80 bg-card shadow-xl lg:shadow-2xl overflow-hidden grid lg:grid-cols-2">
+        <div className="rounded-2xl lg:rounded-3xl border border-border/80 bg-card shadow-xl lg:shadow-2xl overflow-hidden lg:grid lg:grid-cols-2">
           {/* DESKTOP ONLY: BANNER GAMBAR DI DALAM CARD (SISI KIRI) */}
-          <div className="hidden lg:block relative w-full h-full bg-slate-950">
+          <div className="hidden lg:block relative bg-slate-950">
             <img
               src="/login-banner.svg"
               alt="SemestaPay Banner"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover absolute inset-0"
             />
           </div>
 
           {/* SISI KANAN (Desktop) / KONTEN CARD (Mobile): FORM LOGIN */}
-          <div className="p-6 sm:p-8 lg:p-10 flex flex-col justify-center space-y-5">
+          <div className="p-6 sm:p-8 lg:p-10 flex flex-col space-y-5">
             {/* Top Brand Header & Greeting - Rapat & Proporsional */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between pb-1">
