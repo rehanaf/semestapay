@@ -17,11 +17,6 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
-  Radio,
-  Zap,
-  CreditCard,
-  Building2,
-  Check,
 } from "lucide-react";
 
 export default function TestUiLoginPage() {
@@ -57,143 +52,75 @@ export default function TestUiLoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-background">
-      {/* ======================================================== */}
-      {/* SISI KIRI (Desktop) / SISI ATAS (Mobile): BANNER VISUAL   */}
-      {/* ======================================================== */}
-      <div className="relative w-full lg:w-1/2 xl:w-5/12 bg-slate-950 text-white flex flex-col justify-between p-6 sm:p-10 lg:p-12 overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-800">
-        {/* Ambient Glows */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/30 blur-[120px] rounded-full" />
-          <div className="absolute top-1/2 -right-20 w-80 h-80 bg-blue-500/20 blur-[100px] rounded-full" />
-          <div className="absolute -bottom-24 left-1/3 w-96 h-96 bg-emerald-500/15 blur-[120px] rounded-full" />
-          {/* Subtle Grid Lines */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:32px_32px]" />
-        </div>
-
-        {/* Banner Top: Brand Logo */}
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="size-10 sm:size-11 rounded-xl bg-gradient-to-tr from-indigo-500 to-blue-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30 ring-2 ring-white/20">
-              <ShieldCheck className="size-6 stroke-[2.2]" />
-            </div>
-            <div>
-              <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
-                SemestaPay
-              </span>
-              <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
-                Digital Islamic School Payment Ecosystem
-              </p>
-            </div>
-          </div>
-
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-            Sistem Aktif
-          </div>
-        </div>
-
-        {/* Banner Center: Mockup Kartu RFID & Headline */}
-        <div className="relative z-10 py-8 lg:py-12 space-y-6">
-          <div className="space-y-3 max-w-lg">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
-              <Sparkles className="size-3.5 text-indigo-400" />
-              Solusi Cashless Terpadu Pesantren
-            </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
-              Satu Kartu Pintar untuk Seluruh Transaksi Santri
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md hidden sm:block">
-              Kelola pembayaran SPP, kasir kantin & koperasi santri, hingga batas belanja harian dengan aman dan transparan.
-            </p>
-          </div>
-
-          {/* Visual Mockup: Kartu RFID Pintar SemestaPay (Desktop & Tablet) */}
-          <div className="relative pt-2 max-w-md mx-auto lg:mx-0">
-            {/* Kartu Utama */}
-            <div className="relative rounded-2xl bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 p-5 sm:p-6 border border-indigo-500/40 shadow-2xl shadow-indigo-950/60 backdrop-blur-md">
-              <div className="flex items-center justify-between pb-6">
-                <div className="flex items-center gap-2">
-                  <div className="size-7 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center">
-                    <Radio className="size-4 text-indigo-300 animate-pulse" />
-                  </div>
-                  <span className="text-xs font-bold tracking-widest text-indigo-200 uppercase">
-                    RFID SMART CARD
-                  </span>
-                </div>
-                <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  AKTIF
-                </span>
-              </div>
-
-              {/* Chip & Contactless */}
-              <div className="flex items-center gap-3 my-2">
-                <div className="w-10 h-8 rounded-md bg-gradient-to-br from-amber-200 to-amber-500 shadow-inner border border-amber-300/40 flex items-center justify-center">
-                  <div className="w-6 h-5 border border-amber-700/30 rounded-[3px]" />
-                </div>
-                <Radio className="size-5 text-indigo-300/80 -rotate-90" />
-              </div>
-
-              {/* Detail Kartu */}
-              <div className="pt-4 flex items-end justify-between">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-slate-400 font-mono">
-                    Santri Binaan
-                  </p>
-                  <p className="text-sm font-bold text-white tracking-wide">
-                    AHMAD FAUZI
-                  </p>
-                  <p className="text-[11px] text-indigo-300 font-mono">
-                    NIS: 2026-001 • Kelas 7A
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-wider text-slate-400 font-mono">
-                    Saldo Dompet
-                  </p>
-                  <p className="text-sm sm:text-base font-extrabold text-emerald-400 font-mono">
-                    Rp 114.000
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Floating Glass Badge 1 */}
-            <div className="absolute -bottom-3 -right-2 sm:-right-4 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700 shadow-lg backdrop-blur-md flex items-center gap-2 text-xs">
-              <div className="size-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <Zap className="size-3" />
-              </div>
-              <span className="font-semibold text-slate-200 text-[11px]">Tap Kasir &lt; 1 Detik</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Banner Bottom: Footer Info */}
-        <div className="relative z-10 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-          <p>© 2026 SemestaPay. Hak Cipta Dilindungi.</p>
-          <span className="hidden sm:inline-block">Konsol Sentral V2.4</span>
-        </div>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-muted/40 relative overflow-x-hidden">
+      {/* Background ambient lighting */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/10 blur-[130px] rounded-full" />
+        <div className="absolute -bottom-40 right-10 w-[500px] h-[350px] bg-primary/10 blur-[120px] rounded-full" />
       </div>
 
-      {/* ======================================================== */}
-      {/* SISI KANAN (Desktop) / SISI BAWAH (Mobile): FORM LOGIN    */}
-      {/* ======================================================== */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 lg:p-14 relative">
-        <div className="w-full max-w-[440px] space-y-6">
-          {/* Header Form */}
-          <div className="space-y-1.5">
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Masuk ke Konsol
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Gunakan akun Administrator, Pengelola Sekolah, atau Kasir
-            </p>
+      <div className="w-full max-w-md lg:max-w-4xl xl:max-w-5xl">
+        {/* ======================================================== */}
+        {/* MOBILE ONLY: BANNER GAMBAR DI LUAR CARD                  */}
+        {/* ======================================================== */}
+        <div className="lg:hidden mb-4 w-full h-44 sm:h-56 rounded-2xl overflow-hidden border border-border/80 shadow-md bg-slate-950">
+          <img
+            src="/login-banner.svg"
+            alt="SemestaPay Banner"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* ======================================================== */}
+        {/* CARD UTAMA                                               */}
+        {/* Desktop: Banner gambar (kiri) & login (kanan) di DALAM card */}
+        {/* Mobile: Hanya membungkus form login                       */}
+        {/* ======================================================== */}
+        <div className="rounded-2xl lg:rounded-3xl border border-border/80 bg-card shadow-xl lg:shadow-2xl overflow-hidden grid lg:grid-cols-2">
+          {/* DESKTOP ONLY: BANNER GAMBAR DI DALAM CARD (SISI KIRI) */}
+          <div className="hidden lg:block relative w-full h-full min-h-[580px] bg-slate-950">
+            <img
+              src="/login-banner.svg"
+              alt="SemestaPay Banner"
+              className="w-full h-full object-cover"
+            />
           </div>
 
-          {/* Card Form */}
-          <div className="rounded-2xl border border-border/80 bg-card p-6 sm:p-8 shadow-xl space-y-5">
+          {/* SISI KANAN (Desktop) / KONTEN CARD (Mobile): FORM LOGIN */}
+          <div className="p-6 sm:p-8 lg:p-10 flex flex-col justify-between space-y-6">
+            {/* Top Brand Header */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-9 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow">
+                    <ShieldCheck className="size-5" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-base tracking-tight text-foreground leading-none">
+                      SemestaPay
+                    </span>
+                    <p className="text-[11px] text-muted-foreground">Admin Console</p>
+                  </div>
+                </div>
+
+                <Badge variant="secondary" className="text-[10px] font-semibold uppercase">
+                  V2.4
+                </Badge>
+              </div>
+
+              <div className="pt-2">
+                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+                  Selamat Datang
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Masuk dengan akun berwenang untuk mengakses konsol
+                </p>
+              </div>
+            </div>
+
+            {/* Form Section */}
             {success ? (
-              <div className="py-6 text-center space-y-4">
+              <div className="py-8 text-center space-y-4">
                 <div className="size-16 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-500/20 animate-bounce">
                   <CheckCircle2 className="size-8" />
                 </div>
@@ -220,7 +147,7 @@ export default function TestUiLoginPage() {
                   </div>
                 )}
 
-                {/* Email Input - Standar Normal 44px (h-11) */}
+                {/* Email Input - Normal 44px (h-11) */}
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-sm font-medium text-foreground">
                     Email Pengguna
@@ -234,12 +161,12 @@ export default function TestUiLoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-11 pl-10 text-sm rounded-xl border-border/80 bg-background/60 focus:bg-background transition-all shadow-xs"
+                      className="h-11 pl-10 text-sm rounded-xl border-border/80 bg-background focus:bg-background transition-all shadow-xs"
                     />
                   </div>
                 </div>
 
-                {/* Password Input - Standar Normal 44px (h-11) */}
+                {/* Password Input - Normal 44px (h-11) */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password" className="text-sm font-medium text-foreground">
@@ -265,7 +192,7 @@ export default function TestUiLoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="h-11 pl-10 pr-11 text-sm rounded-xl border-border/80 bg-background/60 focus:bg-background transition-all shadow-xs font-mono"
+                      className="h-11 pl-10 pr-11 text-sm rounded-xl border-border/80 bg-background focus:bg-background transition-all shadow-xs font-mono"
                     />
                     <button
                       type="button"
@@ -292,11 +219,11 @@ export default function TestUiLoginPage() {
                   </Label>
                 </div>
 
-                {/* Submit Button - Standar Normal 44px (h-11) */}
+                {/* Submit Button - Normal 44px (h-11) */}
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="w-full h-11 text-sm font-semibold rounded-xl shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all cursor-pointer gap-2 mt-2"
+                  className="w-full h-11 text-sm font-semibold rounded-xl shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all cursor-pointer gap-2 mt-1"
                 >
                   {submitting ? (
                     <>
@@ -323,7 +250,7 @@ export default function TestUiLoginPage() {
                   </div>
                 </div>
 
-                {/* Demo Quick-Fill Buttons */}
+                {/* Demo Quick-Fill Buttons - Normal 40px (h-10) */}
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
@@ -341,22 +268,22 @@ export default function TestUiLoginPage() {
                     onClick={() => fillDemo("operator@cashless.dev")}
                   >
                     <Sparkles className="size-3.5 text-emerald-500" />
-                    Operator Sekolah
+                    Operator
                   </Button>
                 </div>
               </form>
             )}
-          </div>
 
-          {/* Footer Navigation Link */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-            <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
-              ← Kembali ke Dashboard
-            </Link>
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="size-3.5 text-emerald-600" />
-              Koneksi Terenkripsi SSL
-            </span>
+            {/* Footer Navigation Link */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+              <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
+                ← Kembali ke Beranda
+              </Link>
+              <span className="flex items-center gap-1 text-[11px]">
+                <ShieldCheck className="size-3 text-emerald-600" />
+                TLS 1.3 Aktif
+              </span>
+            </div>
           </div>
         </div>
       </div>
