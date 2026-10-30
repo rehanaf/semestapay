@@ -63,7 +63,7 @@ export default function TestUiLoginPage() {
         {/* ======================================================== */}
         {/* MOBILE ONLY: BANNER GAMBAR DI LUAR CARD                  */}
         {/* ======================================================== */}
-        <div className="lg:hidden mb-4 w-full h-44 sm:h-56 rounded-2xl overflow-hidden border border-border/80 shadow-md bg-slate-950">
+        <div className="lg:hidden mb-4 w-full h-44 sm:h-52 rounded-2xl overflow-hidden border border-border/80 shadow-md bg-slate-950">
           <img
             src="/login-banner.svg"
             alt="SemestaPay Banner"
@@ -78,7 +78,7 @@ export default function TestUiLoginPage() {
         {/* ======================================================== */}
         <div className="rounded-2xl lg:rounded-3xl border border-border/80 bg-card shadow-xl lg:shadow-2xl overflow-hidden grid lg:grid-cols-2">
           {/* DESKTOP ONLY: BANNER GAMBAR DI DALAM CARD (SISI KIRI) */}
-          <div className="hidden lg:block relative w-full h-full min-h-[580px] bg-slate-950">
+          <div className="hidden lg:block relative w-full h-full bg-slate-950">
             <img
               src="/login-banner.svg"
               alt="SemestaPay Banner"
@@ -87,19 +87,19 @@ export default function TestUiLoginPage() {
           </div>
 
           {/* SISI KANAN (Desktop) / KONTEN CARD (Mobile): FORM LOGIN */}
-          <div className="p-6 sm:p-8 lg:p-10 flex flex-col justify-between space-y-6">
-            {/* Top Brand Header */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
+          <div className="p-6 sm:p-8 lg:p-10 flex flex-col justify-center space-y-5">
+            {/* Top Brand Header & Greeting - Rapat & Proporsional */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between pb-1">
                 <div className="flex items-center gap-2.5">
-                  <div className="size-9 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow">
-                    <ShieldCheck className="size-5" />
+                  <div className="size-8 rounded-lg bg-primary text-primary-foreground font-bold flex items-center justify-center text-xs shadow-sm">
+                    <ShieldCheck className="size-4" />
                   </div>
                   <div>
-                    <span className="font-extrabold text-base tracking-tight text-foreground leading-none">
+                    <span className="font-extrabold text-sm tracking-tight text-foreground leading-none">
                       SemestaPay
                     </span>
-                    <p className="text-[11px] text-muted-foreground">Admin Console</p>
+                    <p className="text-[10px] text-muted-foreground">Admin Console</p>
                   </div>
                 </div>
 
@@ -108,11 +108,11 @@ export default function TestUiLoginPage() {
                 </Badge>
               </div>
 
-              <div className="pt-2">
+              <div>
                 <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
                   Selamat Datang
                 </h2>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                   Masuk dengan akun berwenang untuk mengakses konsol
                 </p>
               </div>
@@ -120,7 +120,7 @@ export default function TestUiLoginPage() {
 
             {/* Form Section */}
             {success ? (
-              <div className="py-8 text-center space-y-4">
+              <div className="py-6 text-center space-y-4">
                 <div className="size-16 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-500/20 animate-bounce">
                   <CheckCircle2 className="size-8" />
                 </div>
@@ -139,17 +139,17 @@ export default function TestUiLoginPage() {
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3.5">
                 {error && (
-                  <div className="flex items-start gap-3 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm leading-snug">
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm leading-snug">
                     <AlertCircle className="size-4 shrink-0 mt-0.5" />
                     <p>{error}</p>
                   </div>
                 )}
 
                 {/* Email Input - Normal 44px (h-11) */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                <div className="space-y-1">
+                  <Label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">
                     Email Pengguna
                   </Label>
                   <div className="relative">
@@ -167,9 +167,9 @@ export default function TestUiLoginPage() {
                 </div>
 
                 {/* Password Input - Normal 44px (h-11) */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                    <Label htmlFor="password" className="text-xs sm:text-sm font-medium text-foreground">
                       Kata Sandi
                     </Label>
                     <a
@@ -206,7 +206,7 @@ export default function TestUiLoginPage() {
                 </div>
 
                 {/* Remember Me */}
-                <div className="flex items-center gap-2.5 pt-1">
+                <div className="flex items-center gap-2 pt-0.5">
                   <input
                     type="checkbox"
                     id="remember"
@@ -239,7 +239,7 @@ export default function TestUiLoginPage() {
                 </Button>
 
                 {/* Divider Akun Demo */}
-                <div className="relative py-2">
+                <div className="relative py-1">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-border/60" />
                   </div>
@@ -274,8 +274,8 @@ export default function TestUiLoginPage() {
               </form>
             )}
 
-            {/* Footer Navigation Link */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+            {/* Footer Navigation Link - Dekat & Menyatu Rapi */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/60">
               <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
                 ← Kembali ke Beranda
               </Link>
