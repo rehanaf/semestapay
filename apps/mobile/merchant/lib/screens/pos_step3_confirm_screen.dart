@@ -3,6 +3,7 @@ import 'package:semestapay_api_client/semestapay_api_client.dart';
 import 'package:uuid/uuid.dart';
 import '../state/pos_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/custom_numpad.dart';
 import 'home_screen.dart';
 
 class PosStep3ConfirmScreen extends StatefulWidget {
@@ -14,16 +15,45 @@ class PosStep3ConfirmScreen extends StatefulWidget {
 }
 
 class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
-  final _pinController = TextEditingController();
+  String _pin = '';
   final _noteController = TextEditingController();
   bool _submitting = false;
   String? _errorMessage;
 
   @override
   void dispose() {
-    _pinController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _onKeyPress(String key) {
+    if (_pin.length >= 6) return;
+    setState(() {
+      _pin += key;
+      _errorMessage = null;
+    });
+  }
+
+  void _onDelete() {
+    if (_pin.isEmpty) return;
+    setState(() {
+      _pin = _pin.substring(0, _pin.length - 1);
+      _errorMessage = null;
+    });
+  }
+
+  void _onClear() {
+    setState(() {
+      _pin = '';
+      _errorMessage = null;
+    });
+  }
+
+  void _fillDemoPin() {
+    setState(() {
+      _pin = '123456';
+      _errorMessage = null;
+    });
   }
 
   Future<void> _handlePayment() async {
@@ -37,7 +67,7 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
 
     // Check balance
     if (card.wallet.balance < total) {
-      setState(() => _errorMessage = 'Saldo santri tidak mencukupi.');
+      setState(() => _errorMessage = 'Saldo dompet santri tidak mencukupi.');
       return;
     }
 
@@ -62,17 +92,7 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
         note: _noteController.text.trim().isNotEmpty
             ? _noteController.text.trim()
             : null,
-        pin: _pinController.text.trim().isNotEmpty
-            ? _pinController.text.trim()
-            : null,
-        items: widget.posState.cartItems.isNotEmpty
-            ? widget.posState.cartItems
-                .map((ci) => TapPaymentItem(
-                      itemId: ci.item.id,
-                      quantity: ci.quantity,
-                    ))
-                .toList()
-            : null,
+        pin: _pin.isNotEmpty ? _pin : null,
       );
 
       final res = await widget.posState.api.tapPayment(req);
@@ -83,7 +103,7 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
     } on ApiException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {
-      setState(() => _errorMessage = 'Gagal memproses pembayaran.');
+      setState(() => _errorMessage = 'Gagal memproses pembayaran ke server.');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -146,11 +166,15 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                           'Total Dibayar',
                           style: TextStyle(fontSize: 12),
                         ),
-                        Text(
-                          widget.posState.formatCurrency(res.amount),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            widget.posState.formatCurrency(res.amount),
+                            maxLines: 1,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -164,13 +188,17 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                             'Sisa Saldo Santri',
                             style: TextStyle(fontSize: 12),
                           ),
-                          Text(
-                            widget.posState
-                                .formatCurrency(res.walletBalanceAfter!),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: AppTheme.successColor,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              widget.posState
+                                  .formatCurrency(res.walletBalanceAfter!),
+                              maxLines: 1,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: AppTheme.successColor,
+                              ),
                             ),
                           ),
                         ],
@@ -215,47 +243,54 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Langkah 3: Konfirmasi & PIN'),
+        title: const Text('Konfirmasi & PIN'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Student Card Info
+              // Ringkasan Santri & Total Tagihan (Kompak & Fitted)
               Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header: Santri Info
                       Row(
                         children: [
                           CircleAvatar(
+                            radius: 18,
                             backgroundColor:
                                 AppTheme.primaryColor.withValues(alpha: 0.15),
                             child: const Icon(
                               Icons.person_rounded,
                               color: AppTheme.primaryColor,
+                              size: 20,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   card.student.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
                                   'NIS: ${card.student.nis} • ${card.student.className ?? 'Santri'}',
                                   style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     color: AppTheme.textSecondary,
                                   ),
                                 ),
@@ -265,7 +300,7 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
-                              vertical: 4,
+                              vertical: 3,
                             ),
                             decoration: BoxDecoration(
                               color:
@@ -283,7 +318,10 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                           ),
                         ],
                       ),
-                      const Divider(height: 24),
+
+                      const Divider(height: 20),
+
+                      // Saldo & Limit
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -291,9 +329,9 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Saldo Dompet Santri',
+                                'Saldo Santri',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 10,
                                   color: AppTheme.textSecondary,
                                 ),
                               ),
@@ -302,8 +340,8 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                                 widget.posState
                                     .formatCurrency(card.wallet.balance),
                                 style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
                                   color: AppTheme.successColor,
                                 ),
                               ),
@@ -315,7 +353,7 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                               const Text(
                                 'Sisa Limit Harian',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 10,
                                   color: AppTheme.textSecondary,
                                 ),
                               ),
@@ -324,7 +362,7 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                                 widget.posState.formatCurrency(
                                     card.remainingDailyLimit),
                                 style: const TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: AppTheme.textPrimary,
                                 ),
@@ -333,122 +371,98 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
 
-              const SizedBox(height: 16),
+                      const Divider(height: 20),
 
-              // Transaction Detail Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Rincian Transaksi',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (widget.posState.cartItems.isNotEmpty) ...[
-                        ...widget.posState.cartItems.map((ci) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${ci.item.name} x${ci.quantity}',
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                  Text(
-                                    widget.posState.formatCurrency(ci.subtotal),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )),
-                        const Divider(height: 16),
-                      ],
+                      // TOTAL TAGIHAN (Anti-overflow / never wrap down)
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Total Pembayaran',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            widget.posState.formatCurrency(total),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: AppTheme.primaryDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // PIN Input Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'PIN Santri (6 Digit)',
+                            'Total Tagihan',
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textSecondary,
                             ),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              _pinController.text = '123456';
-                            },
-                            child: const Text('Isi Demo PIN (123456)'),
+                          const Spacer(),
+                          Flexible(
+                            child: SizedBox(
+                              height: 32,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  widget.posState.formatCurrency(total),
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppTheme.primaryDark,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _pinController,
-                        keyboardType: TextInputType.number,
-                        obscureText: true,
-                        maxLength: 6,
-                        decoration: const InputDecoration(
-                          hintText: 'Masukkan PIN kartu santri',
-                          prefixIcon: Icon(Icons.pin_outlined),
-                          counterText: '',
-                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // PIN Box Header & Dots Indicator
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.lock_outline_rounded,
+                                  size: 16, color: AppTheme.textSecondary),
+                              SizedBox(width: 6),
+                              Text(
+                                'PIN Santri (6 Digit)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: _fillDemoPin,
+                            child: const Text(
+                              'Demo PIN (123456)',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _noteController,
-                        decoration: const InputDecoration(
-                          hintText: 'Catatan tambahan (opsional)',
-                          prefixIcon: Icon(Icons.note_alt_outlined),
-                        ),
+                      const SizedBox(height: 14),
+                      PinDotsIndicator(
+                        totalDots: 6,
+                        filledCount: _pin.length,
                       ),
                     ],
                   ),
@@ -456,9 +470,9 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
               ),
 
               if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppTheme.dangerColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
@@ -471,7 +485,7 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                       const Icon(
                         Icons.error_outline_rounded,
                         color: AppTheme.dangerColor,
-                        size: 20,
+                        size: 18,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -479,7 +493,8 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                           _errorMessage!,
                           style: const TextStyle(
                             color: AppTheme.dangerColor,
-                            fontSize: 12,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -488,12 +503,26 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                 ),
               ],
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
+              // Custom On-Screen Numpad for PIN
+              CustomNumpad(
+                onKeyPressed: _onKeyPress,
+                onDeletePressed: _onDelete,
+                onClearPressed: _onClear,
+                isPin: true,
+              ),
+
+              const SizedBox(height: 14),
+
+              // Konfirmasi & Bayar Button
               ElevatedButton(
                 onPressed: _submitting ? null : _handlePayment,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 child: _submitting
                     ? const SizedBox(
@@ -504,17 +533,29 @@ class _PosStep3ConfirmScreenState extends State<PosStep3ConfirmScreen> {
                           strokeWidth: 2,
                         ),
                       )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.lock_rounded, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Konfirmasi & Bayar ${widget.posState.formatCurrency(total)}',
+                    : SizedBox(
+                        height: 24,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.check_circle_rounded, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Konfirmasi Bayar (${widget.posState.formatCurrency(total)})',
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
               ),
+              const SizedBox(height: 12),
             ],
           ),
         ),

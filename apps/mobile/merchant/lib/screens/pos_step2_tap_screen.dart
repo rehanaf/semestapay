@@ -106,12 +106,22 @@ class _PosStep2TapScreenState extends State<PosStep2TapScreen>
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      widget.posState.formatCurrency(grandTotal),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(
+                        height: 38,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            widget.posState.formatCurrency(grandTotal),
+                            maxLines: 1,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:semestapay_api_client/semestapay_api_client.dart';
 import '../state/pos_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/custom_numpad.dart';
 import 'pos_step2_tap_screen.dart';
 
 class PosStep1CartScreen extends StatefulWidget {
@@ -12,56 +12,75 @@ class PosStep1CartScreen extends StatefulWidget {
   State<PosStep1CartScreen> createState() => _PosStep1CartScreenState();
 }
 
-class _PosStep1CartScreenState extends State<PosStep1CartScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  List<MerchantItem> _items = [];
-  bool _loading = false;
-  final TextEditingController _manualController = TextEditingController();
+class _PosStep1CartScreenState extends State<PosStep1CartScreen> {
+  String _amountStr = '';
 
   final List<double> _presetAmounts = [
     5000,
     10000,
     15000,
     20000,
-    25000,
     50000,
+    100000,
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _loadItems();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _manualController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadItems() async {
-    setState(() => _loading = true);
-    try {
-      final list = await widget.posState.api.getItems();
-      if (mounted) {
-        setState(() => _items = list);
-      }
-    } catch (_) {
-      // offline / mock fallback
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    final current = widget.posState.manualAmount;
+    if (current > 0) {
+      _amountStr = current.toInt().toString();
     }
+  }
+
+  void _onKeyPress(String key) {
+    if (_amountStr.length >= 8) return; // Prevent absurdly long numbers
+    setState(() {
+      if (_amountStr == '0' || _amountStr.isEmpty) {
+        if (key != '0' && key != '00') {
+          _amountStr = key;
+        }
+      } else {
+        _amountStr += key;
+      }
+      _syncAmount();
+    });
+  }
+
+  void _onDelete() {
+    if (_amountStr.isEmpty) return;
+    setState(() {
+      _amountStr = _amountStr.substring(0, _amountStr.length - 1);
+      _syncAmount();
+    });
+  }
+
+  void _onClear() {
+    setState(() {
+      _amountStr = '';
+      _syncAmount();
+    });
+  }
+
+  void _setPreset(double amount) {
+    setState(() {
+      _amountStr = amount.toInt().toString();
+      _syncAmount();
+    });
+  }
+
+  void _syncAmount() {
+    final parsed = double.tryParse(_amountStr) ?? 0.0;
+    widget.posState.setManualAmount(parsed);
   }
 
   void _proceedToTap() {
     if (widget.posState.grandTotal <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Pilih produk atau masukkan nominal terlebih dahulu.'),
+          content: Text('Masukkan nominal pembayaran terlebih dahulu.'),
           backgroundColor: AppTheme.dangerColor,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
@@ -83,276 +102,166 @@ class _PosStep1CartScreenState extends State<PosStep1CartScreen>
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Langkah 1: Pilih Produk / Nominal'),
-            bottom: TabBar(
-              controller: _tabController,
-              labelColor: AppTheme.primaryColor,
-              indicatorColor: AppTheme.primaryColor,
-              tabs: const [
-                Tab(icon: Icon(Icons.fastfood_rounded), text: 'Katalog Menu'),
-                Tab(icon: Icon(Icons.dialpad_rounded), text: 'Nominal Manual'),
-              ],
-            ),
+            title: const Text('Input Nominal Transaksi'),
+            actions: [
+              if (_amountStr.isNotEmpty)
+                TextButton(
+                  onPressed: _onClear,
+                  child: const Text(
+                    'Reset',
+                    style: TextStyle(
+                      color: AppTheme.dangerColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              // TAB 1: Katalog Produk
-              _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _items.isEmpty
-                      ? const Center(child: Text('Tidak ada produk tersedia'))
-                      : ListView.separated(
-                          padding: const EdgeInsets.only(
-                            left: 16,
-                            right: 16,
-                            top: 16,
-                            bottom: 100,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Amount Display Card (Fixed, never wraps down)
+                  Card(
+                    color: AppTheme.darkBg,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 18,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'NOMINAL PEMBAYARAN',
+                            style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
                           ),
-                          itemCount: _items.length,
-                          separatorBuilder: (c, i) =>
-                              const SizedBox(height: 8),
-                          itemBuilder: (ctx, idx) {
-                            final item = _items[idx];
-                            final inCart = widget.posState.cartItems.firstWhere(
-                              (ci) => ci.item.id == item.id,
-                              orElse: () => CartItem(item: item, quantity: 0),
-                            );
-
-                            return Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryColor
-                                            .withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: const Icon(
-                                        Icons.restaurant,
-                                        color: AppTheme.primaryColor,
-                                        size: 22,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.name,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            widget.posState
-                                                .formatCurrency(item.price),
-                                            style: const TextStyle(
-                                              color: AppTheme.textSecondary,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (inCart.quantity > 0) ...[
-                                      IconButton(
-                                        icon: const Icon(Icons.remove_circle,
-                                            color: AppTheme.dangerColor),
-                                        onPressed: () =>
-                                            widget.posState.removeItem(item),
-                                      ),
-                                      Text(
-                                        '${inCart.quantity}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.add_circle,
-                                            color: AppTheme.primaryColor),
-                                        onPressed: () =>
-                                            widget.posState.addItem(item),
-                                      ),
-                                    ] else ...[
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          minimumSize: const Size(70, 36),
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12),
-                                        ),
-                                        onPressed: () =>
-                                            widget.posState.addItem(item),
-                                        child: const Text('Tambah'),
-                                      ),
-                                    ],
-                                  ],
+                          const SizedBox(height: 8),
+                          // FittedBox guarantees the amount never wraps onto a second line!
+                          SizedBox(
+                            height: 48,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                widget.posState.formatCurrency(grandTotal),
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.5,
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Outlet: ${widget.posState.outletName}',
+                            style: const TextStyle(
+                              color: AppTheme.primaryLight,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
-              // TAB 2: Input Manual
-              SingleChildScrollView(
-                padding: const EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 16,
-                  bottom: 100,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Text(
-                              'Nominal Transaksi (Rp)',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _manualController,
-                              keyboardType: TextInputType.number,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                              ),
-                              decoration: const InputDecoration(
-                                prefixText: 'Rp ',
-                                hintText: '0',
-                              ),
-                              onChanged: (val) {
-                                final parsed = double.tryParse(val) ?? 0.0;
-                                widget.posState.setManualAmount(parsed);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'PILIHAN CEPAT',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 2.5,
-                      ),
+                  const SizedBox(height: 10),
+
+                  // Preset Chips (Horizontal Scrollable)
+                  SizedBox(
+                    height: 38,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
                       itemCount: _presetAmounts.length,
+                      separatorBuilder: (c, i) => const SizedBox(width: 8),
                       itemBuilder: (ctx, idx) {
                         final amt = _presetAmounts[idx];
-                        return OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          onPressed: () {
-                            _manualController.text = amt.toInt().toString();
-                            widget.posState.setManualAmount(amt);
-                          },
-                          child: Text(
+                        final isSelected = grandTotal == amt;
+                        return ChoiceChip(
+                          label: Text(
                             widget.posState.formatCurrency(amt),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppTheme.textPrimary,
                             ),
                           ),
+                          selected: isSelected,
+                          selectedColor: AppTheme.primaryColor,
+                          backgroundColor: Colors.white,
+                          showCheckmark: false,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppTheme.primaryColor
+                                  : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          onSelected: (_) => _setPreset(amt),
                         );
                       },
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+                  ),
 
-          // Bottom Cart Bar
-          bottomSheet: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 10,
-                  offset: const Offset(0, -3),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.posState.cartItems.isNotEmpty
-                              ? '${widget.posState.totalItemCount} item dipilih'
-                              : 'Total Pembayaran',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                        Text(
-                          widget.posState.formatCurrency(grandTotal),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                      ],
+                  const Spacer(),
+
+                  // Custom On-Screen Numpad
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: CustomNumpad(
+                      onKeyPressed: _onKeyPress,
+                      onDeletePressed: _onDelete,
+                      onClearPressed: _onClear,
+                      isPin: false,
                     ),
                   ),
+
+                  const Spacer(),
+
+                  // Action Button
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      minimumSize: const Size.fromHeight(52),
+                      backgroundColor: grandTotal > 0
+                          ? AppTheme.primaryColor
+                          : const Color(0xFFCBD5E1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     onPressed: grandTotal > 0 ? _proceedToTap : null,
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Lanjut ke Tap'),
-                        SizedBox(width: 6),
-                        Icon(Icons.arrow_forward_rounded, size: 18),
+                        const Text(
+                          'Lanjut ke Tap Kartu',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_rounded, size: 20),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
