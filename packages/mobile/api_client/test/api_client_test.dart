@@ -98,5 +98,85 @@ void main() {
         ),
       );
     });
+
+    test('getTransactions parses UUID and student name correctly', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/api/v1/transactions');
+        return http.Response(
+          jsonEncode({
+            'data': [
+              {
+                'id': '178be0ee-b95c-4e22-b540-5ac9dd6e34a5',
+                'created_at': '2026-10-31T06:50:32.000000Z',
+                'type': 'payment',
+                'amount': 12000,
+                'status': 'posted',
+                'student_name': 'Ahmad Fauzi',
+                'student_nis': '2026-001',
+                'merchant_name': 'Kantin Pesantren',
+                'note': null,
+              }
+            ]
+          }),
+          200,
+        );
+      });
+
+      final client = SemestaPayApiClient(
+        baseUrl: 'https://test.api/api/v1',
+        client: mockClient,
+        token: 'mock-token',
+      );
+
+      final result = await client.getTransactions();
+      expect(result.length, 1);
+      expect(result.first.id, '178be0ee-b95c-4e22-b540-5ac9dd6e34a5');
+      expect(result.first.studentName, 'Ahmad Fauzi');
+      expect(result.first.amount, 12000.0);
+      expect(result.first.status, 'posted');
+      expect(result.first.invoiceNumber, '178BE0EE');
+    });
+
+    test('tapPayment parses response with UUID transaction correctly', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/api/v1/payments/tap');
+        return http.Response(
+          jsonEncode({
+            'success': true,
+            'message': 'Pembayaran berhasil.',
+            'transaction_id': '178be0ee-b95c-4e22-b540-5ac9dd6e34a5',
+            'amount': 12000,
+            'balance_after': 102000,
+            'student': {
+              'name': 'Ahmad Fauzi',
+              'nis': '2026-001',
+            },
+          }),
+          200,
+        );
+      });
+
+      final client = SemestaPayApiClient(
+        baseUrl: 'https://test.api/api/v1',
+        client: mockClient,
+        token: 'mock-token',
+      );
+
+      final result = await client.tapPayment(
+        TapPaymentRequest(
+          cardUid: 'DEMO-UID-0001',
+          outletCode: 'OUTLET-01',
+          amount: 12000,
+          idempotencyKey: 'idem-123',
+          pin: '123456',
+        ),
+      );
+
+      expect(result.status, 'success');
+      expect(result.transactionId, '178be0ee-b95c-4e22-b540-5ac9dd6e34a5');
+      expect(result.studentName, 'Ahmad Fauzi');
+      expect(result.walletBalanceAfter, 102000.0);
+      expect(result.invoiceNumber, '178BE0EE');
+    });
   });
 }

@@ -46,7 +46,7 @@ class TapPaymentRequest {
 }
 
 class TapPaymentResponse {
-  final int transactionId;
+  final String transactionId;
   final String invoiceNumber;
   final String status;
   final double amount;
@@ -67,19 +67,24 @@ class TapPaymentResponse {
   });
 
   factory TapPaymentResponse.fromJson(Map<String, dynamic> json) {
-    final tx = json['transaction'] as Map<String, dynamic>? ?? json;
+    final rawId = json['transaction_id']?.toString() ??
+        json['id']?.toString() ??
+        '';
+    final invoice =
+        rawId.length >= 8 ? rawId.substring(0, 8).toUpperCase() : rawId;
+
     return TapPaymentResponse(
-      transactionId: (tx['id'] as int?) ?? 0,
-      invoiceNumber: (tx['invoice_number'] as String?) ??
-          (tx['reference_no'] as String?) ??
-          '',
-      status: (tx['status'] as String?) ?? 'success',
-      amount: (tx['amount'] as num?)?.toDouble() ?? 0.0,
-      walletBalanceAfter: (tx['wallet_balance_after'] as num?)?.toDouble() ??
-          (json['wallet']?['balance'] as num?)?.toDouble(),
-      studentName: tx['student']?['name'] as String?,
-      createdAt: tx['created_at'] as String?,
-      note: tx['note'] as String?,
+      transactionId: rawId,
+      invoiceNumber: invoice,
+      status: (json['status'] as String?) ?? 'success',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      walletBalanceAfter: (json['balance_after'] as num?)?.toDouble() ??
+          (json['wallet_balance_after'] as num?)?.toDouble(),
+      studentName: json['student'] is Map
+          ? (json['student'] as Map)['name']?.toString()
+          : json['student_name']?.toString(),
+      createdAt: json['created_at']?.toString(),
+      note: json['note'] as String?,
     );
   }
 }
