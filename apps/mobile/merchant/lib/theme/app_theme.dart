@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static const primaryColor = Color(0xFFD97706); // Warm Amber
@@ -13,6 +14,10 @@ class AppTheme {
   static const dangerColor = Color(0xFFEF4444);
 
   static ThemeData get lightTheme {
+    final baseTextTheme = ThemeData.light().textTheme;
+    final plusJakartaTheme =
+        GoogleFonts.plusJakartaSansTextTheme(baseTextTheme);
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
@@ -20,13 +25,14 @@ class AppTheme {
         primary: primaryColor,
         surface: surfaceBg,
       ),
+      textTheme: plusJakartaTheme,
       scaffoldBackgroundColor: surfaceBg,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
         foregroundColor: textPrimary,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.plusJakartaSans(
           color: textPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w700,
@@ -66,7 +72,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
