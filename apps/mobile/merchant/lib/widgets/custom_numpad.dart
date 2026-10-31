@@ -88,7 +88,7 @@ class CustomNumpad extends StatelessWidget {
         // Row 4: Action/00, 0, Backspace
         Row(
           children: [
-            // Left Action: "00" for amount, or "C" for PIN/Clear
+            // Left Action: "000" for amount, or "C" for PIN/Clear
             Expanded(
               child: SizedBox(
                 height: 56,
@@ -104,8 +104,8 @@ class CustomNumpad extends StatelessWidget {
                         : const SizedBox.shrink())
                     : _buildKey(
                         context,
-                        text: '00',
-                        onTap: () => onKeyPressed('00'),
+                        text: '000',
+                        onTap: () => onKeyPressed('000'),
                       ),
               ),
             ),

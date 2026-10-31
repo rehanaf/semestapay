@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../state/pos_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_numpad.dart';
@@ -13,64 +14,113 @@ class PosStep1CartScreen extends StatefulWidget {
 }
 
 class _PosStep1CartScreenState extends State<PosStep1CartScreen> {
-  String _amountStr = '';
+  late TextEditingController _amountController;
+  final FocusNode _focusNode = FocusNode();
 
-  final List<double> _presetAmounts = [
+  final List<double> _addShortcuts = [
+    500,
+    1000,
+    2000,
     5000,
     10000,
-    15000,
     20000,
     50000,
-    100000,
   ];
 
   @override
   void initState() {
     super.initState();
     final current = widget.posState.manualAmount;
-    if (current > 0) {
-      _amountStr = current.toInt().toString();
-    }
+    final initialText = current > 0 ? current.toInt().toString() : '';
+    _amountController = TextEditingController(text: initialText);
+    _amountController.selection =
+        TextSelection.collapsed(offset: initialText.length);
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   void _onKeyPress(String key) {
-    if (_amountStr.length >= 8) return; // Prevent absurdly long numbers
+    final text = _amountController.text;
+    final selection = _amountController.selection;
+    final start = selection.start >= 0 ? selection.start : text.length;
+    final end = selection.end >= 0 ? selection.end : text.length;
+
+    if (text.length + key.length > 9) return; // Prevent overflow
+
+    final newText = text.replaceRange(start, end, key);
+    final newOffset = start + key.length;
+
     setState(() {
-      if (_amountStr == '0' || _amountStr.isEmpty) {
-        if (key != '0' && key != '00') {
-          _amountStr = key;
-        }
-      } else {
-        _amountStr += key;
-      }
+      _amountController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newOffset),
+      );
       _syncAmount();
     });
   }
 
   void _onDelete() {
-    if (_amountStr.isEmpty) return;
-    setState(() {
-      _amountStr = _amountStr.substring(0, _amountStr.length - 1);
-      _syncAmount();
-    });
+    final text = _amountController.text;
+    final selection = _amountController.selection;
+    if (text.isEmpty) return;
+
+    final start = selection.start;
+    final end = selection.end;
+
+    if (start != end) {
+      // Range delete
+      final newText = text.replaceRange(start, end, '');
+      setState(() {
+        _amountController.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: start),
+        );
+        _syncAmount();
+      });
+    } else if (start > 0) {
+      // Single char delete before cursor
+      final newText = text.replaceRange(start - 1, start, '');
+      setState(() {
+        _amountController.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: start - 1),
+        );
+        _syncAmount();
+      });
+    }
   }
 
   void _onClear() {
     setState(() {
-      _amountStr = '';
+      _amountController.value = const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
       _syncAmount();
     });
   }
 
-  void _setPreset(double amount) {
+  void _addAmount(double addVal) {
+    final current = double.tryParse(_amountController.text) ?? 0.0;
+    final next = current + addVal;
+    final nextStr = next.toInt().toString();
+
     setState(() {
-      _amountStr = amount.toInt().toString();
+      _amountController.value = TextEditingValue(
+        text: nextStr,
+        selection: TextSelection.collapsed(offset: nextStr.length),
+      );
       _syncAmount();
     });
   }
 
   void _syncAmount() {
-    final parsed = double.tryParse(_amountStr) ?? 0.0;
+    final parsed = double.tryParse(_amountController.text) ?? 0.0;
     widget.posState.setManualAmount(parsed);
   }
 
@@ -93,6 +143,11 @@ class _PosStep1CartScreenState extends State<PosStep1CartScreen> {
     );
   }
 
+  String _formatChipText(double amt) {
+    final f = NumberFormat('#,###', 'id_ID');
+    return '+${f.format(amt.toInt())}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -104,7 +159,7 @@ class _PosStep1CartScreenState extends State<PosStep1CartScreen> {
           appBar: AppBar(
             title: const Text('Input Nominal Transaksi'),
             actions: [
-              if (_amountStr.isNotEmpty)
+              if (_amountController.text.isNotEmpty)
                 TextButton(
                   onPressed: _onClear,
                   child: const Text(
@@ -123,105 +178,148 @@ class _PosStep1CartScreenState extends State<PosStep1CartScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Amount Display Card (Fixed, never wraps down)
+                  // Top Outlet / Info
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Outlet: ${widget.posState.outletName}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      const Text(
+                        'Tap angka untuk atur kursor',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Amount Display Card with interactive Caret/Cursor
                   Card(
                     color: AppTheme.darkBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 18,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'NOMINAL PEMBAYARAN',
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          // FittedBox guarantees the amount never wraps onto a second line!
-                          SizedBox(
-                            height: 48,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                widget.posState.formatCurrency(grandTotal),
-                                maxLines: 1,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.5,
-                                ),
+                    child: InkWell(
+                      onTap: () => _focusNode.requestFocus(),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'NOMINAL PEMBAYARAN',
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Outlet: ${widget.posState.outletName}',
-                            style: const TextStyle(
-                              color: AppTheme.primaryLight,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                            const SizedBox(height: 10),
+                            // Caret Input Display
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'Rp ',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Flexible(
+                                  child: IntrinsicWidth(
+                                    child: TextField(
+                                      controller: _amountController,
+                                      focusNode: _focusNode,
+                                      readOnly: true,
+                                      showCursor: true,
+                                      autofocus: true,
+                                      cursorColor: AppTheme.primaryColor,
+                                      cursorWidth: 3.0,
+                                      cursorRadius: const Radius.circular(2),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1.0,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        hintText: '0',
+                                        hintStyle: TextStyle(
+                                          color: Colors.white30,
+                                          fontSize: 36,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                        border: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        filled: false,
+                                        contentPadding: EdgeInsets.zero,
+                                        isDense: true,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
-                  // Preset Chips (Horizontal Scrollable)
+                  // Additive Shortcut Chips (+500, +1000, +2000, ...)
                   SizedBox(
                     height: 38,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: _presetAmounts.length,
+                      itemCount: _addShortcuts.length,
                       separatorBuilder: (c, i) => const SizedBox(width: 8),
                       itemBuilder: (ctx, idx) {
-                        final amt = _presetAmounts[idx];
-                        final isSelected = grandTotal == amt;
-                        return ChoiceChip(
+                        final addVal = _addShortcuts[idx];
+                        return ActionChip(
                           label: Text(
-                            widget.posState.formatCurrency(amt),
-                            style: TextStyle(
+                            _formatChipText(addVal),
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppTheme.textPrimary,
+                              color: AppTheme.primaryDark,
                             ),
                           ),
-                          selected: isSelected,
-                          selectedColor: AppTheme.primaryColor,
                           backgroundColor: Colors.white,
-                          showCheckmark: false,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(
-                              color: isSelected
-                                  ? AppTheme.primaryColor
-                                  : const Color(0xFFE2E8F0),
+                            side: const BorderSide(
+                              color: Color(0xFFCBD5E1),
                             ),
                           ),
-                          onSelected: (_) => _setPreset(amt),
+                          onPressed: () => _addAmount(addVal),
                         );
                       },
                     ),
                   ),
 
+                  // Spacer pushes numpad down directly above the action button!
                   const Spacer(),
 
-                  // Custom On-Screen Numpad
+                  // Custom On-Screen Numpad with "000"
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: CustomNumpad(
@@ -232,9 +330,9 @@ class _PosStep1CartScreenState extends State<PosStep1CartScreen> {
                     ),
                   ),
 
-                  const Spacer(),
+                  const SizedBox(height: 12),
 
-                  // Action Button
+                  // Action Button: Lanjut ke Tap Kartu
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
@@ -246,22 +344,33 @@ class _PosStep1CartScreenState extends State<PosStep1CartScreen> {
                       ),
                     ),
                     onPressed: grandTotal > 0 ? _proceedToTap : null,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Lanjut ke Tap Kartu',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Lanjut ke Tap Kartu',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.arrow_forward_rounded, size: 20),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            '(${widget.posState.formatCurrency(grandTotal)})',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward_rounded, size: 20),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                 ],
               ),
             ),
