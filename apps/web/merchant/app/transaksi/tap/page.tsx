@@ -165,8 +165,8 @@ export default function PosStep2TapPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold font-mono tracking-tight text-primary">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-2xl font-bold font-mono tracking-tight text-primary whitespace-nowrap">
               Rp {totalAmount.toLocaleString("id-ID")}
             </span>
           </div>

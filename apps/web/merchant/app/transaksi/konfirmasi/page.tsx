@@ -462,10 +462,12 @@ export default function PosStep3ConfirmPage() {
                         Memproses Pembayaran...
                       </>
                     ) : (
-                      <>
-                        <ShieldCheck className="size-4" />
-                        Konfirmasi & Bayar Rp {totalAmount.toLocaleString("id-ID")}
-                      </>
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <ShieldCheck className="size-4 shrink-0" />
+                        <span className="whitespace-nowrap truncate">
+                          Konfirmasi & Bayar Rp {totalAmount.toLocaleString("id-ID")}
+                        </span>
+                      </div>
                     )}
                   </Button>
                 </CardContent>
