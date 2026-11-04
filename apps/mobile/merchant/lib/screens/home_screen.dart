@@ -35,6 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (_) {
       // offline or mock fallback
+    }
+
+    try {
+      await widget.posState.refreshMerchantSummary();
+    } catch (_) {
+      // merchant summary is optional for offline mode
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -92,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = widget.posState.currentUser;
+    final summary = widget.posState.merchantSummary;
 
     return Scaffold(
       appBar: AppBar(
@@ -192,6 +199,63 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'ID MERCHANT',
+                                style: TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                summary?.code ?? widget.posState.outletCode,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text(
+                                'SALDO MERCHANT',
+                                style: TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.posState.formatCurrency(
+                                  summary?.balance ??
+                                      _recentTransactions.fold<double>(
+                                          0, (sum, tx) => sum + tx.amount),
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.greenAccent,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

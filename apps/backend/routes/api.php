@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\v1\ItemController;
 use App\Http\Controllers\Api\v1\MerchantController;
 use App\Http\Controllers\Api\v1\PaymentController;
 use App\Http\Controllers\Api\v1\StudentController;
+use App\Http\Controllers\Api\v1\StudentPortalController;
 use App\Http\Controllers\Api\v1\TopupController;
 use App\Http\Controllers\Api\v1\TransactionController;
 use App\Http\Controllers\Api\v1\WalletController;
@@ -14,6 +15,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login'])
+        ->middleware('throttle:10,1');
+    Route::post('/auth/student-login', [AuthController::class, 'studentLogin'])
+        ->middleware('throttle:10,1');
+    Route::post('/auth/parent-login', [AuthController::class, 'parentLogin'])
         ->middleware('throttle:10,1');
     Route::post('/auth/send-otp', [AuthController::class, 'sendOtp'])
         ->middleware('throttle:5,1');
@@ -47,7 +52,12 @@ Route::prefix('v1')->group(function () {
         Route::put('/items/{item}', [ItemController::class, 'update']);
 
         Route::get('/merchants', [MerchantController::class, 'index']);
+        Route::get('/merchant/summary', [MerchantController::class, 'summary']);
         Route::post('/merchants', [MerchantController::class, 'store']);
+
+        Route::get('/student/dashboard', [StudentPortalController::class, 'dashboard']);
+        Route::get('/student/mutations', [StudentPortalController::class, 'mutations']);
+        Route::get('/student/bills', [StudentPortalController::class, 'bills']);
 
         Route::get('/transactions', [TransactionController::class, 'index']);
     });

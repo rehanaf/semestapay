@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'SemestaPay POS',
+                  'SmPay Merchant',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24,

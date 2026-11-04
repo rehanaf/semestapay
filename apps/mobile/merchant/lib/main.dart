@@ -7,17 +7,17 @@ import 'theme/app_theme.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final posState = PosState();
-  runApp(SemestaPayMerchantApp(posState: posState));
+  runApp(SmPayMerchantApp(posState: posState));
 }
 
-class SemestaPayMerchantApp extends StatelessWidget {
+class SmPayMerchantApp extends StatelessWidget {
   final PosState posState;
-  const SemestaPayMerchantApp({super.key, required this.posState});
+  const SmPayMerchantApp({super.key, required this.posState});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SemestaPay POS',
+      title: 'SmPay Merchant',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: posState.isAuthenticated

@@ -35,22 +35,22 @@
   </header>
 
   <!-- Main Content -->
-  <main class="max-w-4xl mx-auto px-6 py-12 flex-1 flex flex-col justify-center">
+  <main class="max-w-5xl mx-auto px-6 py-12 flex-1 flex flex-col justify-center">
     <div class="text-center mb-10">
       <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-amber-400 mx-auto mb-4">
         📦 Pusat Unduhan APK Android
       </div>
       <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight">
-        Unduh Aplikasi Mobile SemestaPay
+        Unduh Aplikasi Mobile SmPay
       </h1>
       <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto mt-3">
-        Pasang aplikasi resmi SemestaPay langsung di perangkat Android kasir, wali santri, dan santri.
+        Pasang aplikasi resmi SmPay langsung di perangkat Android kasir, wali santri, dan santri.
       </p>
     </div>
 
     <!-- Download Cards Grid -->
     <div class="grid md:grid-cols-3 gap-6">
-      <!-- 1. Merchant POS Card -->
+      <!-- 1. Merchant Card -->
       <div class="rounded-2xl border border-amber-500/30 bg-gradient-to-b from-slate-900 to-slate-900/60 p-6 flex flex-col justify-between shadow-xl relative overflow-hidden">
         <div class="absolute top-0 right-0 bg-amber-500 text-slate-950 text-[10px] font-extrabold px-3 py-1 rounded-bl-xl uppercase tracking-wider">
           Rilis Terbaru
@@ -59,9 +59,9 @@
           <div class="h-12 w-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-2xl mb-4 border border-amber-500/30">
             🏪
           </div>
-          <h2 class="text-lg font-bold text-white">Merchant POS</h2>
+          <h2 class="text-lg font-bold text-white">SmPay Merchant</h2>
           <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-            Aplikasi kasir kantin & koperasi pesantren. Dukungan scan/tap kartu RFID santri, pesanan katalog, dan input nominal.
+            Aplikasi kasir kantin &amp; koperasi pesantren. Scan/tap kartu RFID santri, pesanan katalog, input nominal, plus pantau ID &amp; saldo merchant.
           </p>
           <div class="space-y-1.5 text-[11px] text-slate-400 border-t border-slate-800 pt-3 mb-6">
             <div class="flex justify-between"><span>Versi:</span><span class="text-slate-200 font-mono">1.0.0+1</span></div>
@@ -69,52 +69,60 @@
             <div class="flex justify-between"><span>Format:</span><span class="text-slate-200 font-mono">APK Release</span></div>
           </div>
         </div>
-        <a href="/apk/semestapay-merchant.apk" download class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 transition-all shadow-lg shadow-amber-500/20 active:scale-95">
+        <a href="/apk/smpay-merchant.apk" download class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 transition-all shadow-lg shadow-amber-500/20 active:scale-95">
           <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
-          Unduh APK (POS)
+          Unduh APK Merchant
         </a>
       </div>
 
-      <!-- 2. Parent / Wali Card -->
-      <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 flex flex-col justify-between">
+      <!-- 2. Student Card -->
+      <div class="rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-slate-900 to-slate-900/60 p-6 flex flex-col justify-between shadow-xl">
         <div>
-          <div class="h-12 w-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-2xl mb-4 border border-indigo-500/20">
-            👨‍👩‍👦
-          </div>
-          <h2 class="text-lg font-bold text-white">Wali Santri</h2>
-          <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-            Pantau saldo tabungan santri, riwayat transaksi jajan harian, atur limit harian belanja, dan bayar tagihan SPP.
-          </p>
-          <div class="space-y-1.5 text-[11px] text-slate-400 border-t border-slate-800 pt-3 mb-6">
-            <div class="flex justify-between"><span>Status:</span><span class="text-indigo-400 font-semibold">Segera Hadir</span></div>
-            <div class="flex justify-between"><span>Target:</span><span class="text-slate-400">Android 7.0+</span></div>
-          </div>
-        </div>
-        <button disabled class="w-full py-3 px-4 rounded-xl font-semibold text-xs bg-slate-800 text-slate-500 cursor-not-allowed">
-          Segera Tersedia
-        </button>
-      </div>
-
-      <!-- 3. Student / Santri Card -->
-      <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 flex flex-col justify-between">
-        <div>
-          <div class="h-12 w-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-2xl mb-4 border border-emerald-500/20">
+          <div class="h-12 w-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-2xl mb-4 border border-emerald-500/30">
             🎓
           </div>
-          <h2 class="text-lg font-bold text-white">Santri Mobile</h2>
+          <h2 class="text-lg font-bold text-white">SmPay Mobile</h2>
           <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
-            Aplikasi dompet digital khusus santri untuk cek sisa saldo kartu RFID dan riwayat mutasi transaksi di pesantren.
+            Aplikasi dompet digital khusus santri. Cek saldo kartu RFID, limit harian, riwayat mutasi jajan, dan tagihan pesantren.
           </p>
           <div class="space-y-1.5 text-[11px] text-slate-400 border-t border-slate-800 pt-3 mb-6">
-            <div class="flex justify-between"><span>Status:</span><span class="text-emerald-400 font-semibold">Segera Hadir</span></div>
-            <div class="flex justify-between"><span>Target:</span><span class="text-slate-400">Android 7.0+</span></div>
+            <div class="flex justify-between"><span>Versi:</span><span class="text-slate-200 font-mono">1.0.0+1</span></div>
+            <div class="flex justify-between"><span>Target:</span><span class="text-slate-200">Android 7.0+</span></div>
+            <div class="flex justify-between"><span>Format:</span><span class="text-slate-200 font-mono">APK Release</span></div>
           </div>
         </div>
-        <button disabled class="w-full py-3 px-4 rounded-xl font-semibold text-xs bg-slate-800 text-slate-500 cursor-not-allowed">
-          Segera Tersedia
-        </button>
+        <a href="/apk/smpay-mobile.apk" download class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-slate-950 transition-all shadow-lg shadow-emerald-500/20 active:scale-95">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
+          Unduh APK Santri
+        </a>
+      </div>
+
+      <!-- 3. Parent / Wali Card -->
+      <div class="rounded-2xl border border-indigo-500/30 bg-gradient-to-b from-slate-900 to-slate-900/60 p-6 flex flex-col justify-between shadow-xl">
+        <div>
+          <div class="h-12 w-12 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-2xl mb-4 border border-indigo-500/30">
+            👨‍👩‍👦
+          </div>
+          <h2 class="text-lg font-bold text-white">SmPay Ortu</h2>
+          <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
+            Pantau saldo tabungan santri, riwayat transaksi jajan harian, dan tagihan SPP langsung dari ponsel wali santri.
+          </p>
+          <div class="space-y-1.5 text-[11px] text-slate-400 border-t border-slate-800 pt-3 mb-6">
+            <div class="flex justify-between"><span>Versi:</span><span class="text-slate-200 font-mono">1.0.0+1</span></div>
+            <div class="flex justify-between"><span>Target:</span><span class="text-slate-200">Android 7.0+</span></div>
+            <div class="flex justify-between"><span>Format:</span><span class="text-slate-200 font-mono">APK Release</span></div>
+          </div>
+        </div>
+        <a href="/apk/smpay-ortu.apk" download class="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
+          Unduh APK Wali
+        </a>
       </div>
     </div>
+
+    <p class="text-center text-[11px] text-slate-500 mt-8">
+      Butuh bantuan pemasangan? Aktifkan “Install from unknown sources” pada perangkat Android Anda sebelum memasang APK.
+    </p>
   </main>
 
   <!-- Footer -->

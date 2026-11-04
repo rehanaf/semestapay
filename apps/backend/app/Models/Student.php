@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable([
     'nis', 'name', 'class_id', 'phone_parent', 'pin_hash', 'status',
@@ -15,9 +18,9 @@ use Illuminate\Support\Facades\Hash;
     'balance', 'currency', 'wallet_status', 'balance_updated_at', 'version',
     'daily_limit',
 ])]
-class Student extends Model
+class Student extends Model implements AuthenticatableContract
 {
-    use HasFactory;
+    use Authenticatable, HasApiTokens, HasFactory;
 
     protected function casts(): array
     {

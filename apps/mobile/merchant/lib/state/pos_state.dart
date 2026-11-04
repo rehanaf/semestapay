@@ -17,6 +17,9 @@ class PosState extends ChangeNotifier {
   // Scanned student card
   CardReadResponse? _scannedCard;
 
+  // Merchant profile & balance
+  MerchantSummary? _merchantSummary;
+
   User? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
   String get outletCode => _outletCode;
@@ -25,6 +28,7 @@ class PosState extends ChangeNotifier {
   double get manualAmount => _manualAmount;
   String get note => _note;
   CardReadResponse? get scannedCard => _scannedCard;
+  MerchantSummary? get merchantSummary => _merchantSummary;
 
   double get cartTotal {
     double sum = 0.0;
@@ -64,6 +68,12 @@ class PosState extends ChangeNotifier {
   void setUser(User? user, String token) {
     _currentUser = user;
     api.setToken(token);
+    notifyListeners();
+  }
+
+  Future<void> refreshMerchantSummary() async {
+    final summary = await api.getMerchantSummary();
+    _merchantSummary = summary;
     notifyListeners();
   }
 

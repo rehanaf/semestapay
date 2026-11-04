@@ -1,6 +1,6 @@
 {
-    "name": "merchant_app",
-    "short_name": "merchant_app",
+    "name": "SmPay Merchant",
+    "short_name": "SmPay Merchant",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

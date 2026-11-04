@@ -31,10 +31,15 @@ dependencies:
   flutter:
     sdk: flutter
 
+  semestapay_api_client:
+    path: ../../../packages/mobile/api_client
   semestapay_core:
     path: ../../../packages/mobile/core
   semestapay_mobile_ui:
     path: ../../../packages/mobile/ui
+
+  intl: ^0.19.0
+  google_fonts: ^8.2.1
 
   cupertino_icons: ^1.0.8
 
