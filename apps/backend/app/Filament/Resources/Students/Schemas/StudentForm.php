@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\Students\Schemas;
 
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
@@ -16,14 +18,34 @@ class StudentForm
                 TextInput::make('nis')
                     ->required()
                     ->unique(ignoreRecord: true),
+                TextInput::make('username')
+                    ->maxLength(60)
+                    ->unique(ignoreRecord: true)
+                    ->helperText('Otomatis memakai NIS bila dikosongkan.'),
                 TextInput::make('name')
                     ->required(),
+                TextInput::make('email')
+                    ->email()
+                    ->unique(ignoreRecord: true),
                 Select::make('class_id')
                     ->relationship('klass', 'name')
                     ->searchable()
                     ->preload(),
                 TextInput::make('phone_parent')
                     ->tel(),
+                TextInput::make('nik')
+                    ->maxLength(32),
+                Select::make('gender')
+                    ->options([
+                        'male' => 'Laki-laki',
+                        'female' => 'Perempuan',
+                    ]),
+                DatePicker::make('birth_date'),
+                Textarea::make('address')
+                    ->columnSpanFull(),
+                TextInput::make('parent_name'),
+                TextInput::make('parent_email')
+                    ->email(),
                 Select::make('status')
                     ->required()
                     ->options([
@@ -56,6 +78,9 @@ class StudentForm
                     ->numeric()
                     ->default(0),
                 DateTimePicker::make('balance_updated_at'),
+                TextInput::make('avatar_path')
+                    ->label('Path Foto Profil')
+                    ->maxLength(255),
             ]);
     }
 }

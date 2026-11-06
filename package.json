@@ -4,13 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "turbo dev",
-    "dev:admin": "turbo dev --filter=web-admin",
-    "dev:school": "turbo dev --filter=web-school",
-    "dev:merchant": "turbo dev --filter=web-merchant",
+    "dev:admin": "turbo dev --filter=admin",
+    "dev:merchant": "turbo dev --filter=merchant",
     "dev:backend": "cd apps/backend && php artisan serve --port=8000",
     "build": "turbo build",
     "lint": "turbo lint",
-    "clean": "turbo clean"
+    "clean": "turbo clean",
+    "build:apk": "bash scripts/build_apk.sh all",
+    "build:apk:mobile": "bash scripts/build_apk.sh mobile",
+    "build:apk:merchant": "bash scripts/build_apk.sh merchant"
   },
   "devDependencies": {
     "turbo": "^2.4.4"

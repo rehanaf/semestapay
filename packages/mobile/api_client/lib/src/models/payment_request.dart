@@ -51,7 +51,11 @@ class TapPaymentResponse {
   final String status;
   final double amount;
   final double? walletBalanceAfter;
+  double? get balanceAfter => walletBalanceAfter;
   final String? studentName;
+  final String? merchant;
+  final String? outlet;
+  final double? merchantBalanceAfter;
   final String? createdAt;
   final String? note;
 
@@ -62,6 +66,9 @@ class TapPaymentResponse {
     required this.amount,
     this.walletBalanceAfter,
     this.studentName,
+    this.merchant,
+    this.outlet,
+    this.merchantBalanceAfter,
     this.createdAt,
     this.note,
   });
@@ -83,6 +90,10 @@ class TapPaymentResponse {
       studentName: json['student'] is Map
           ? (json['student'] as Map)['name']?.toString()
           : json['student_name']?.toString(),
+      merchant: json['merchant'] as String?,
+      outlet: json['outlet'] as String?,
+      merchantBalanceAfter:
+          (json['merchant_balance_after'] as num?)?.toDouble(),
       createdAt: json['created_at']?.toString(),
       note: json['note'] as String?,
     );

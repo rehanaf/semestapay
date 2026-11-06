@@ -71,6 +71,54 @@ class PosState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateUser(User user) {
+    _currentUser = user;
+    notifyListeners();
+  }
+
+  Future<String> updateAvatar(String base64Image) async {
+    final avatarUrl = await api.uploadUserAvatar(base64Image);
+    if (_currentUser != null) {
+      _currentUser = User(
+        id: _currentUser!.id,
+        name: _currentUser!.name,
+        email: _currentUser!.email,
+        username: _currentUser!.username,
+        phone: _currentUser!.phone,
+        avatarUrl: avatarUrl.isNotEmpty ? avatarUrl : _currentUser!.avatarUrl,
+        merchantId: _currentUser!.merchantId,
+        roles: _currentUser!.roles,
+      );
+      notifyListeners();
+    }
+    return avatarUrl;
+  }
+
+  Future<User> updateProfile({
+    String? name,
+    String? email,
+    String? username,
+    String? phone,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (name != null) payload['name'] = name;
+    if (email != null) payload['email'] = email;
+    if (username != null) payload['username'] = username;
+    if (phone != null) payload['phone'] = phone;
+    final updated = await api.updateUserProfile(payload);
+    _currentUser = updated;
+    notifyListeners();
+    return updated;
+  }
+
+  Future<void> refreshUserProfile() async {
+    try {
+      final user = await api.getUserProfile();
+      _currentUser = user;
+      notifyListeners();
+    } catch (_) {}
+  }
+
   Future<void> refreshMerchantSummary() async {
     final summary = await api.getMerchantSummary();
     _merchantSummary = summary;

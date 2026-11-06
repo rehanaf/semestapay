@@ -6,7 +6,7 @@ void main() {
   testWidgets('App renders login screen initially', (WidgetTester tester) async {
     final posState = PosState();
     await tester.pumpWidget(SmPayMerchantApp(posState: posState));
-    expect(find.text('SmPay Merchant'), findsOneWidget);
-    expect(find.text('Buka Terminal Kasir'), findsOneWidget);
+    expect(find.text('Semestapay Merchant'), findsOneWidget);
+    expect(find.text('Masuk ke Merchant'), findsOneWidget);
   });
 }

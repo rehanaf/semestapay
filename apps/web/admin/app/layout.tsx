@@ -13,8 +13,8 @@ const fontMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SemestaPay — Admin Console",
-  description: "Superadmin & Master Operational Console for SemestaPay",
+  title: "SemestaPAY — Admin Console",
+  description: "Superadmin & Master Operational Console for SemestaPAY",
 };
 
 export default function RootLayout({

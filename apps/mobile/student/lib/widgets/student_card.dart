@@ -22,7 +22,7 @@ class StudentCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryDark.withValues(alpha: 0.25),
+            color: AppColors.primaryDark.withValues(alpha: 0.25),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -127,10 +127,10 @@ class StudentCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppTheme.successColor.withValues(alpha: 0.2),
+                  color: AppColors.success.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppTheme.successColor.withValues(alpha: 0.5),
+                    color: AppColors.success.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Text(

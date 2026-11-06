@@ -9,5 +9,7 @@ export 'src/models/merchant_item.dart';
 export 'src/models/payment_request.dart';
 export 'src/models/transaction.dart';
 export 'src/models/merchant_summary.dart';
+export 'src/models/merchant_report.dart';
+export 'src/models/cash_out_response.dart';
 export 'src/models/student_portal.dart';
 export 'src/models/parent_portal.dart';

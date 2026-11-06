@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:semestapay_mobile_ui/semestapay_mobile_ui.dart';
+
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'state/pos_state.dart';
-import 'theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,12 +18,17 @@ class SmPayMerchantApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SmPay Merchant',
+      title: 'SemestaPAY Merchant',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: posState.isAuthenticated
-          ? HomeScreen(posState: posState)
-          : LoginScreen(posState: posState),
+      theme: AppTheme.merchant,
+      home: ListenableBuilder(
+        listenable: posState,
+        builder: (context, _) {
+          return posState.isAuthenticated
+              ? MerchantHomeScreen(posState: posState)
+              : LoginScreen(posState: posState);
+        },
+      ),
     );
   }
 }

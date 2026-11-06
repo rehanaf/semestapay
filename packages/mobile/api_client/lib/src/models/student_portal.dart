@@ -2,6 +2,8 @@ class StudentProfile {
   final int id;
   final String name;
   final String nis;
+  final String? username;
+  final String? email;
   final String? className;
   final String? cardUid;
   final String? cardStatus;
@@ -10,12 +12,22 @@ class StudentProfile {
   final String currency;
   final String? walletStatus;
   final double dailyLimit;
+  final String? avatarUrl;
+  final String? nik;
+  final String? gender;
+  final String? birthDate;
+  final String? address;
+  final String? phoneParent;
+  final String? parentName;
+  final String? parentEmail;
   final String? balanceUpdatedAt;
 
   StudentProfile({
     required this.id,
     required this.name,
     required this.nis,
+    this.username,
+    this.email,
     this.className,
     this.cardUid,
     this.cardStatus,
@@ -24,6 +36,14 @@ class StudentProfile {
     required this.currency,
     this.walletStatus,
     required this.dailyLimit,
+    this.avatarUrl,
+    this.nik,
+    this.gender,
+    this.birthDate,
+    this.address,
+    this.phoneParent,
+    this.parentName,
+    this.parentEmail,
     this.balanceUpdatedAt,
   });
 
@@ -34,6 +54,8 @@ class StudentProfile {
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? '',
       nis: json['nis'] as String? ?? '',
+      username: json['username'] as String?,
+      email: json['email'] as String?,
       className: json['class'] as String? ?? json['class_name'] as String?,
       cardUid: json['card_uid'] as String?,
       cardStatus: json['card_status'] as String?,
@@ -42,9 +64,42 @@ class StudentProfile {
       currency: json['currency'] as String? ?? 'IDR',
       walletStatus: json['wallet_status'] as String?,
       dailyLimit: (json['daily_limit'] as num?)?.toDouble() ?? 0.0,
+      avatarUrl: json['avatar_url'] as String?,
+      nik: json['nik'] as String?,
+      gender: json['gender'] as String?,
+      birthDate: json['birth_date'] as String?,
+      address: json['address'] as String?,
+      phoneParent: json['phone_parent'] as String?,
+      parentName: json['parent_name'] as String?,
+      parentEmail: json['parent_email'] as String?,
       balanceUpdatedAt: json['balance_updated_at'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'nis': nis,
+        'username': username,
+        'email': email,
+        'class': className,
+        'card_uid': cardUid,
+        'card_status': cardStatus,
+        'status': status,
+        'balance': balance,
+        'currency': currency,
+        'wallet_status': walletStatus,
+        'daily_limit': dailyLimit,
+        'avatar_url': avatarUrl,
+        'nik': nik,
+        'gender': gender,
+        'birth_date': birthDate,
+        'address': address,
+        'phone_parent': phoneParent,
+        'parent_name': parentName,
+        'parent_email': parentEmail,
+        'balance_updated_at': balanceUpdatedAt,
+      };
 }
 
 class StudentMutation {

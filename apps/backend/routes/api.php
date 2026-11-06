@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\v1\AdminController;
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\BillController;
 use App\Http\Controllers\Api\v1\CardController;
 use App\Http\Controllers\Api\v1\ItemController;
 use App\Http\Controllers\Api\v1\MerchantController;
 use App\Http\Controllers\Api\v1\PaymentController;
+use App\Http\Controllers\Api\v1\ProfileController;
 use App\Http\Controllers\Api\v1\StudentController;
 use App\Http\Controllers\Api\v1\StudentPortalController;
 use App\Http\Controllers\Api\v1\TopupController;
@@ -28,6 +30,13 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+        Route::get('/profile/student', [ProfileController::class, 'student']);
+        Route::put('/profile/student', [ProfileController::class, 'updateStudent']);
+        Route::post('/profile/student/avatar', [ProfileController::class, 'uploadStudentAvatar']);
+        Route::get('/profile/me', [ProfileController::class, 'user']);
+        Route::put('/profile/me', [ProfileController::class, 'updateUser']);
+        Route::post('/profile/me/avatar', [ProfileController::class, 'uploadUserAvatar']);
 
         Route::get('/card/read/{uid}', [CardController::class, 'read']);
 
@@ -53,7 +62,17 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/merchants', [MerchantController::class, 'index']);
         Route::get('/merchant/summary', [MerchantController::class, 'summary']);
+        Route::get('/merchant/profile', [MerchantController::class, 'profile']);
+        Route::put('/merchant/profile', [MerchantController::class, 'updateProfile']);
+        Route::get('/merchant/reports', [MerchantController::class, 'reports']);
+        Route::post('/merchant/cash-out', [MerchantController::class, 'cashOut']);
         Route::post('/merchants', [MerchantController::class, 'store']);
+
+        Route::prefix('admin')->group(function () {
+            Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
+            Route::post('/students/{student}/balance', [AdminController::class, 'setStudentBalance']);
+            Route::post('/merchants/{merchant}/balance', [AdminController::class, 'setMerchantBalance']);
+        });
 
         Route::get('/student/dashboard', [StudentPortalController::class, 'dashboard']);
         Route::get('/student/mutations', [StudentPortalController::class, 'mutations']);

@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SemestaPay — Ekosistem Finansial & Kasir Non-Tunai Pesantren</title>
+  <title>SemestaPAY — Ekosistem Finansial & Kasir Non-Tunai Pesantren</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
   </style>
@@ -22,10 +23,8 @@
   <header class="border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
-          SP
-        </div>
-        <span class="font-extrabold text-lg tracking-tight">SemestaPay</span>
+        <img src="/semestapay-icon.svg" alt="SemestaPAY" class="h-9 w-9 rounded-xl shadow-lg shadow-indigo-500/20" />
+        <span class="font-extrabold text-xl tracking-tight">SemestaPAY</span>
       </div>
       <div class="flex items-center gap-2">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
@@ -49,39 +48,21 @@
     </p>
 
     <!-- Portals Grid -->
-    <div class="grid gap-6 md:grid-cols-3 text-left">
+    <div class="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto text-left w-full">
       <!-- Admin Portal -->
       <a href="https://pay-admin.zet.web.id" class="group relative rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm transition-all hover:border-indigo-500/50 hover:bg-slate-900/90 hover:shadow-xl hover:shadow-indigo-500/10 flex flex-col justify-between">
         <div>
           <div class="h-12 w-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-105 transition-transform">
             ⚡
           </div>
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Superadmin</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Superadmin &amp; Sekolah</span>
           <h2 class="text-xl font-bold mt-1 text-white">Admin Console</h2>
           <p class="text-slate-400 text-xs mt-2 leading-relaxed">
-            Pusat monitoring transaksi agregat, manajemen yayasan, audit log finansial, dan approval sistem.
+            Pusat monitoring transaksi agregat, manajemen data santri &amp; RFID, kemitraan merchant, tagihan, dan konfigurasi platform.
           </p>
         </div>
         <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-indigo-400 group-hover:text-indigo-300">
           <span>Buka Konsol Admin</span>
-          <span>&rarr;</span>
-        </div>
-      </a>
-
-      <!-- School Portal -->
-      <a href="https://pay-school.zet.web.id" class="group relative rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm transition-all hover:border-emerald-500/50 hover:bg-slate-900/90 hover:shadow-xl hover:shadow-emerald-500/10 flex flex-col justify-between">
-        <div>
-          <div class="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-105 transition-transform">
-            🏫
-          </div>
-          <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Pengelola Pesantren</span>
-          <h2 class="text-xl font-bold mt-1 text-white">School Portal</h2>
-          <p class="text-slate-400 text-xs mt-2 leading-relaxed">
-            Kelola data santri, pasangkan kartu RFID/NFC, atur limit jajan harian, dan pantau tagihan SPP bulanan.
-          </p>
-        </div>
-        <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-emerald-400 group-hover:text-emerald-300">
-          <span>Buka Portal Sekolah</span>
           <span>&rarr;</span>
         </div>
       </a>
@@ -92,7 +73,7 @@
           <div class="h-12 w-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-105 transition-transform">
             🛒
           </div>
-          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Kantin & Koperasi</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Kantin &amp; Koperasi</span>
           <h2 class="text-xl font-bold mt-1 text-white">Merchant Portal</h2>
           <p class="text-slate-400 text-xs mt-2 leading-relaxed">
             Katalog produk jualan santri, rekapitulasi shift kasir, dan pantau pembayaran tap kartu real-time.
@@ -106,17 +87,15 @@
     </div>
 
     <!-- Mobile App Download Banner -->
-    <div class="mt-8 p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-950/40 via-slate-900 to-indigo-950/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="mt-8 p-4 rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-950/40 via-slate-900 to-indigo-950/40 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-4xl mx-auto w-full">
       <div class="flex items-center gap-3 text-left">
-        <div class="h-11 w-11 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl shrink-0">
-          📱
-        </div>
+        <img src="/semestapay-icon.svg" alt="SemestaPAY" class="h-11 w-11 rounded-xl shadow-lg shadow-blue-500/20 shrink-0" />
         <div>
-          <h3 class="font-bold text-sm text-white">Aplikasi Android SmPay</h3>
-          <p class="text-xs text-slate-400">APK rilis untuk Merchant, Santri (SmPay Mobile), dan Wali (SmPay Ortu)</p>
+          <h3 class="font-bold text-sm text-white">Aplikasi Android SemestaPAY</h3>
+          <p class="text-xs text-slate-400">APK rilis resmi: SemestaPAY (Santri) dan SemestaPAY Merchant (Kasir Kantin)</p>
         </div>
       </div>
-      <a href="/apk/" class="shrink-0 px-5 py-2.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors flex items-center gap-2">
+      <a href="/apk/" class="shrink-0 px-5 py-2.5 rounded-xl font-bold text-xs bg-blue-500 hover:bg-blue-400 text-white transition-colors flex items-center gap-2">
         <span>Buka Download APK</span>
         <span>&rarr;</span>
       </a>
@@ -133,7 +112,7 @@
 
   <!-- Footer -->
   <footer class="border-t border-slate-800/60 py-6 text-center text-xs text-slate-500">
-    <p>&copy; 2026 SemestaPay. Powered by Laravel 13 & Next.js 16 Static Engine.</p>
+    <p>&copy; 2026 SemestaPAY. Powered by Laravel 13 & Next.js 16 Static Engine.</p>
   </footer>
 </body>
 </html>

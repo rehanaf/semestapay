@@ -28,6 +28,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -144,12 +145,14 @@ function MerchantLoginForm() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between pb-1">
                 <div className="flex items-center gap-2.5">
-                  <div className="size-8 rounded-lg bg-primary text-primary-foreground font-bold flex items-center justify-center text-xs shadow-sm">
-                    <Store className="size-4" />
-                  </div>
+                  <img
+                    src="/semestapay-merchant-icon.svg"
+                    alt="SemestaPAY Merchant"
+                    className="size-8 rounded-lg shadow-sm"
+                  />
                   <div>
                     <span className="font-extrabold text-sm tracking-tight text-foreground leading-none">
-                      SemestaPay
+                      SemestaPAY
                     </span>
                     <p className="text-[10px] text-muted-foreground">Kasir & Merchant</p>
                   </div>
@@ -484,12 +487,14 @@ function MerchantDashboardView() {
       <aside className="w-64 border-r bg-card flex flex-col shrink-0">
         <div className="h-16 border-b px-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow">
-              <Store className="size-5" />
-            </div>
+            <img
+              src="/semestapay-merchant-icon.svg"
+              alt="SemestaPAY Merchant"
+              className="size-9 rounded-xl shadow"
+            />
             <div>
               <h2 className="font-bold text-sm tracking-tight text-foreground leading-tight">
-                SemestaPay
+                SemestaPAY
               </h2>
               <p className="text-xs text-muted-foreground">Kantin & Koperasi</p>
             </div>
@@ -602,12 +607,14 @@ function MerchantDashboardView() {
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name || "Kasir"}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user?.email || ""}</p>
-                  </div>
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.name || "Kasir"}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user?.email || ""}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="gap-2 text-destructive focus:text-destructive cursor-pointer"

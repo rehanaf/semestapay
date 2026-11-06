@@ -16,8 +16,14 @@ class StudentsTable
             ->columns([
                 TextColumn::make('nis')
                     ->searchable(),
+                TextColumn::make('username')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('name')
                     ->searchable(),
+                TextColumn::make('email')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('klass.name')
                     ->searchable()
                     ->sortable(),

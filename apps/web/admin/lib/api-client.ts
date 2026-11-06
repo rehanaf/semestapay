@@ -182,8 +182,24 @@ export interface MerchantData {
   name: string;
   type: string;
   status: string;
+  balance?: number;
+  owner_name?: string;
+  phone?: string;
+  email?: string;
   items_count: number;
   outlets_count: number;
+}
+
+export interface AuditLogItem {
+  id: number;
+  action: string;
+  actor: string;
+  actor_email?: string;
+  auditable_type?: string;
+  auditable_id?: string;
+  meta?: Record<string, any>;
+  ip_address?: string;
+  created_at?: string;
 }
 
 export interface TransactionRecord {
@@ -203,9 +219,23 @@ export interface StudentItem {
   nis: string;
   name: string;
   class_name: string;
+  class_id?: number;
   card_uid?: string;
+  card_status?: string;
   balance: number;
   daily_limit: number;
+  status: string;
+  phone_parent?: string;
+}
+
+export interface BillItem {
+  id: number;
+  type: string;
+  period: string;
+  description: string;
+  amount: number;
+  paid_amount: number;
+  due_date: string;
   status: string;
 }
 
@@ -225,8 +255,62 @@ export const appApi = {
     return apiFetch<{ data: TransactionRecord[] }>("/transactions");
   },
 
-  async getStudents(): Promise<{ data: StudentItem[] }> {
-    return apiFetch<{ data: StudentItem[] }>("/students");
+  async getStudents(search?: string): Promise<{ data: StudentItem[] }> {
+    const q = search ? `?search=${encodeURIComponent(search)}` : "";
+    return apiFetch<{ data: StudentItem[] }>(`/students${q}`);
+  },
+
+  async createStudent(payload: {
+    nis: string;
+    name: string;
+    class_id?: number;
+    card_uid?: string;
+    balance?: number;
+    daily_limit?: number;
+    phone_parent?: string;
+  }): Promise<{ message: string; data: StudentItem }> {
+    return apiFetch("/students", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateStudent(id: number, payload: Partial<StudentItem>): Promise<{ message: string; data: StudentItem }> {
+    return apiFetch(`/students/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getBills(studentId = 1): Promise<{ data: BillItem[] }> {
+    return apiFetch<{ data: BillItem[] }>(`/bills?student_id=${studentId}`);
+  },
+
+  async setStudentBalance(
+    studentId: number,
+    balance: number,
+    note?: string
+  ): Promise<{ message: string; student: any }> {
+    return apiFetch(`/admin/students/${studentId}/balance`, {
+      method: "POST",
+      body: JSON.stringify({ balance, note }),
+    });
+  },
+
+  async setMerchantBalance(
+    merchantId: number,
+    balance: number,
+    note?: string
+  ): Promise<{ message: string; merchant: any }> {
+    return apiFetch(`/admin/merchants/${merchantId}/balance`, {
+      method: "POST",
+      body: JSON.stringify({ balance, note }),
+    });
+  },
+
+  async getAuditLogs(action?: string): Promise<{ data: AuditLogItem[] }> {
+    const q = action ? `?action=${encodeURIComponent(action)}` : "";
+    return apiFetch<{ data: AuditLogItem[] }>(`/admin/audit-logs${q}`);
   },
 };
 

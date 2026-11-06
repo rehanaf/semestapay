@@ -101,7 +101,10 @@ class StudentPortalController extends Controller
             'id' => $student->id,
             'name' => $student->name,
             'nis' => $student->nis,
+            'username' => $student->username,
+            'email' => $student->email,
             'class' => $student->klass?->name,
+            'class_id' => $student->class_id,
             'card_uid' => $student->card_uid,
             'card_status' => $student->card_status,
             'status' => $student->status,
@@ -109,6 +112,14 @@ class StudentPortalController extends Controller
             'currency' => $student->currency,
             'wallet_status' => $student->wallet_status,
             'daily_limit' => (float) $student->daily_limit,
+            'avatar_url' => $student->avatarUrl(),
+            'nik' => $student->nik,
+            'gender' => $student->gender,
+            'birth_date' => $student->birth_date?->toDateString(),
+            'address' => $student->address,
+            'phone_parent' => $student->phone_parent,
+            'parent_name' => $student->parent_name,
+            'parent_email' => $student->parent_email,
             'balance_updated_at' => $student->balance_updated_at,
         ];
     }
@@ -122,6 +133,7 @@ class StudentPortalController extends Controller
             TransactionType::Topup->value,
             TransactionType::Reversal->value,
             TransactionType::Adjustment->value,
+            TransactionType::CashOut->value,
         ], true);
 
         return [

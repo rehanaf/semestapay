@@ -16,8 +16,17 @@ class MerchantsTable
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
+                TextColumn::make('owner_name')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('phone')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('type')
                     ->searchable(),
+                TextColumn::make('balance')
+                    ->numeric()
+                    ->sortable(),
                 TextColumn::make('status')
                     ->searchable(),
                 TextColumn::make('created_at')

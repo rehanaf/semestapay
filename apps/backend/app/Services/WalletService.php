@@ -19,6 +19,7 @@ use App\Models\BillPayment;
 use App\Models\CashierShift;
 use App\Models\DailyUsage;
 use App\Models\LedgerEntry;
+use App\Models\Merchant;
 use App\Models\Outlet;
 use App\Models\Student;
 use App\Models\Topup;
@@ -111,6 +112,119 @@ class WalletService
     }
 
     /**
+     * Kas keluar: merchant menyerahkan uang tunai, saldo merchant berkurang
+     * dan saldo wallet santri bertambah.
+     */
+    public function cashOut(
+        Student $student,
+        float $amount,
+        Outlet $outlet,
+        ?User $actor = null,
+        ?string $note = null,
+        ?string $idempotencyKey = null,
+        ?CashierShift $shift = null,
+    ): Transaction {
+        $idempotencyKey ??= (string) Str::uuid();
+
+        if ($amount <= 0) {
+            throw new InsufficientBalanceException('Nominal harus lebih dari 0.');
+        }
+
+        return $this->mutate($student, $idempotencyKey, function (Student $student) use (
+            $amount, $outlet, $actor, $note, $idempotencyKey, $shift,
+        ) {
+            $merchant = Merchant::whereKey($outlet->merchant_id)->lockForUpdate()->first();
+
+            if ($merchant === null) {
+                throw new InsufficientBalanceException('Merchant tidak ditemukan.');
+            }
+
+            if ((float) $merchant->balance < $amount) {
+                throw new InsufficientBalanceException('Saldo merchant tidak mencukupi untuk kas keluar.');
+            }
+
+            $this->credit($student, $amount);
+
+            $tx = $this->newTransaction(TransactionType::CashOut, $student, $amount, $idempotencyKey, [
+                'outlet_id' => $outlet->id,
+                'cashier_shift_id' => $shift?->id,
+                'merchant_id' => $outlet->merchant_id,
+                'actor_user_id' => $actor?->id,
+                'note' => $note,
+            ]);
+            $tx->save();
+
+            $this->ledger($tx, [
+                ['account' => 'wallet', 'direction' => LedgerDirection::Credit, 'with_balance' => true],
+                ['account' => 'merchant_payable', 'direction' => LedgerDirection::Debit, 'with_balance' => false],
+            ]);
+
+            return $tx;
+        });
+    }
+
+    /**
+     * Set saldo santri dari panel admin dan catat transaksi penyesuaian.
+     */
+    public function adjustStudentBalance(
+        Student $student,
+        float $newBalance,
+        ?User $actor = null,
+        ?string $note = null,
+    ): ?Transaction {
+        if ($newBalance < 0) {
+            throw new InsufficientBalanceException('Saldo tidak boleh negatif.');
+        }
+
+        if (abs($newBalance - (float) $student->balance) < 0.01) {
+            return null;
+        }
+
+        $idempotencyKey = (string) Str::uuid();
+
+        return $this->mutate($student, $idempotencyKey, function (Student $student) use (
+            $newBalance, $actor, $note, $idempotencyKey,
+        ) {
+            $difference = round($newBalance - (float) $student->balance, 2);
+
+            if ($difference > 0) {
+                $this->credit($student, $difference);
+            } else {
+                $this->charge($student, abs($difference), countDailyUsage: false);
+            }
+
+            $tx = $this->newTransaction(TransactionType::Adjustment, $student, abs($difference), $idempotencyKey, [
+                'actor_user_id' => $actor?->id,
+                'note' => $note ?? 'Penyesuaian saldo oleh admin',
+            ]);
+            $tx->save();
+
+            $this->ledger($tx, [
+                [
+                    'account' => 'wallet',
+                    'direction' => $difference > 0 ? LedgerDirection::Credit : LedgerDirection::Debit,
+                    'with_balance' => true,
+                ],
+                [
+                    'account' => 'adjustment',
+                    'direction' => $difference > 0 ? LedgerDirection::Debit : LedgerDirection::Credit,
+                    'with_balance' => false,
+                ],
+            ]);
+
+            return $tx;
+        });
+    }
+
+    public function setMerchantBalance(Merchant $merchant, float $newBalance): Merchant
+    {
+        $merchant->balance = max(0, $newBalance);
+        $merchant->save();
+
+        return $merchant;
+    }
+
+    /**
      * Bayar tagihan (debit wallet, tidak kena limit harian).
      */
     public function payBill(
@@ -160,7 +274,7 @@ class WalletService
     }
 
     /**
-     * Balikkan transaksi (credit wallet) dan tandai transaksi asal reversed.
+     * Balikkan transaksi dan tandai transaksi asal reversed.
      */
     public function reverse(
         Transaction $original,
@@ -170,22 +284,22 @@ class WalletService
     ): Transaction {
         $idempotencyKey ??= (string) Str::uuid();
 
-        $original->load('student');
+        $original->load(['student', 'outlet']);
 
         if ($original->status === TransactionStatus::Reversed->value) {
             throw new IdempotencyConflictException('Transaksi sudah pernah di-reverse.');
         }
 
-        $debitAccount = match ($original->type) {
-            TransactionType::Payment->value => 'merchant_payable',
-            TransactionType::BillPayment->value => 'receivable_cleared',
-            default => 'cash',
-        };
+        $isCashOut = $original->type === TransactionType::CashOut->value;
 
         return $this->mutate($original->student, $idempotencyKey, function (Student $student) use (
-            $original, $by, $reason, $debitAccount, $idempotencyKey,
+            $original, $by, $reason, $isCashOut, $idempotencyKey,
         ) {
-            $this->credit($student, (float) $original->amount);
+            if ($isCashOut) {
+                $this->charge($student, (float) $original->amount, countDailyUsage: false);
+            } else {
+                $this->credit($student, (float) $original->amount);
+            }
 
             $tx = $this->newTransaction(TransactionType::Reversal, $student, (float) $original->amount, $idempotencyKey, [
                 'reference_type' => 'transaction',
@@ -195,10 +309,24 @@ class WalletService
             ]);
             $tx->save();
 
-            $this->ledger($tx, [
-                ['account' => $debitAccount, 'direction' => LedgerDirection::Debit, 'with_balance' => false],
-                ['account' => 'wallet', 'direction' => LedgerDirection::Credit, 'with_balance' => true],
-            ]);
+            $creditAccount = match ($original->type) {
+                TransactionType::Payment->value => 'merchant_payable',
+                TransactionType::BillPayment->value => 'receivable_cleared',
+                TransactionType::CashOut->value => 'merchant_payable',
+                default => 'cash',
+            };
+
+            if ($isCashOut) {
+                $this->ledger($tx, [
+                    ['account' => 'wallet', 'direction' => LedgerDirection::Debit, 'with_balance' => true],
+                    ['account' => $creditAccount, 'direction' => LedgerDirection::Credit, 'with_balance' => false],
+                ]);
+            } else {
+                $this->ledger($tx, [
+                    ['account' => $creditAccount, 'direction' => LedgerDirection::Debit, 'with_balance' => false],
+                    ['account' => 'wallet', 'direction' => LedgerDirection::Credit, 'with_balance' => true],
+                ]);
+            }
 
             $original->status = TransactionStatus::Reversed->value;
             $original->reversed_by = $tx->id;

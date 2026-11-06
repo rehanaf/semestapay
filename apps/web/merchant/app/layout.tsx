@@ -14,8 +14,8 @@ const fontMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SemestaPay — Merchant Portal",
-  description: "Portal Pengelola Toko & Kantin Pesantren SemestaPay",
+  title: "SemestaPAY — Merchant Portal",
+  description: "Portal Pengelola Toko & Kantin Pesantren SemestaPAY",
 };
 
 export default function RootLayout({

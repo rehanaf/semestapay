@@ -30,11 +30,13 @@ class AuthController extends Controller
             'device_name' => ['nullable', 'string'],
         ]);
 
-        $user = User::where('email', $credentials['email'])
-            ->orWhere('phone', $credentials['email'])
+        $identifier = $credentials['email'];
+        $user = User::where('email', $identifier)
+            ->orWhere('username', $identifier)
+            ->orWhere('phone', $identifier)
             ->first();
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+        if (! $user || ! $user->password || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Kredensial yang diberikan tidak cocok dengan data kami.'],
             ]);
@@ -51,38 +53,59 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'roles' => $user->getRoleNames(),
-            ],
+            'user' => $this->userPayload($user),
         ]);
     }
 
     /**
-     * Login aplikasi siswa (SmPay Mobile) memakai NIS + PIN.
+     * Login aplikasi siswa (SmPay Mobile) memakai username/email + kata sandi.
+     * Login lama (NIS + PIN) tetap diterima untuk kompatibilitas perangkat.
      */
     public function studentLogin(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            'nis' => ['required', 'string'],
-            'pin' => ['required', 'string'],
+            'username' => ['nullable', 'string'],
+            'email' => ['nullable', 'string'],
+            'password' => ['nullable', 'string'],
+            'nis' => ['nullable', 'string'],
+            'pin' => ['nullable', 'string'],
             'device_name' => ['nullable', 'string'],
         ]);
 
+        $identifier = $credentials['username']
+            ?? $credentials['email']
+            ?? $credentials['nis']
+            ?? null;
+        $password = $credentials['password'] ?? null;
+        $pin = $credentials['pin'] ?? null;
+
+        if ($identifier === null || $identifier === '' || ($password === null && $pin === null)) {
+            throw ValidationException::withMessages([
+                'username' => ['Username/email dan kata sandi wajib diisi.'],
+            ]);
+        }
+
         $student = Student::with('klass')
-            ->where('nis', $credentials['nis'])
+            ->where(function ($query) use ($identifier) {
+                $query->where('username', $identifier)
+                    ->orWhere('email', $identifier)
+                    ->orWhere('nis', $identifier);
+            })
             ->first();
 
         if ($student === null || $student->status !== 'active') {
             throw ValidationException::withMessages([
-                'nis' => ['NIS tidak terdaftar atau santri tidak aktif.'],
+                'username' => ['Akun santri tidak terdaftar atau tidak aktif.'],
             ]);
         }
 
-        if (! $student->verifyPin($credentials['pin'])) {
+        if ($password !== null) {
+            if (! $student->verifyPassword($password)) {
+                throw ValidationException::withMessages([
+                    'password' => ['Kata sandi yang Anda masukkan salah.'],
+                ]);
+            }
+        } elseif (! $student->verifyPin($pin)) {
             throw ValidationException::withMessages([
                 'pin' => ['PIN yang Anda masukkan salah.'],
             ]);
@@ -93,17 +116,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'student' => [
-                'id' => $student->id,
-                'name' => $student->name,
-                'nis' => $student->nis,
-                'class' => $student->klass?->name,
-                'card_uid' => $student->card_uid,
-                'card_status' => $student->card_status,
-                'status' => $student->status,
-                'balance' => (float) $student->balance,
-                'daily_limit' => (float) $student->daily_limit,
-            ],
+            'student' => $this->studentPayload($student),
         ]);
     }
 
@@ -243,15 +256,70 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
+        if ($user instanceof Student) {
+            $user->loadMissing('klass');
+
+            return response()->json([
+                'user' => $this->studentPayload($user),
+                'student' => $this->studentPayload($user),
+            ]);
+        }
+
+        $user->loadMissing('merchant');
+
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'phone' => $user->phone,
-                'email' => $user->email,
-                'roles' => $user->getRoleNames(),
-            ],
+            'user' => $this->userPayload($user),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function userPayload(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'avatar_url' => $user->avatarUrl(),
+            'merchant_id' => $user->merchant_id,
+            'merchant_name' => $user->merchant?->name,
+            'roles' => $user->getRoleNames(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function studentPayload(Student $student): array
+    {
+        return [
+            'id' => $student->id,
+            'name' => $student->name,
+            'nis' => $student->nis,
+            'username' => $student->username,
+            'email' => $student->email,
+            'class' => $student->klass?->name,
+            'class_id' => $student->class_id,
+            'card_uid' => $student->card_uid,
+            'card_status' => $student->card_status,
+            'status' => $student->status,
+            'balance' => (float) $student->balance,
+            'daily_limit' => (float) $student->daily_limit,
+            'currency' => $student->currency,
+            'wallet_status' => $student->wallet_status,
+            'avatar_url' => $student->avatarUrl(),
+            'nik' => $student->nik,
+            'gender' => $student->gender,
+            'birth_date' => $student->birth_date?->toDateString(),
+            'address' => $student->address,
+            'phone_parent' => $student->phone_parent,
+            'parent_name' => $student->parent_name,
+            'parent_email' => $student->parent_email,
+            'balance_updated_at' => $student->balance_updated_at,
+        ];
     }
 
     public function logout(Request $request): JsonResponse

@@ -3,7 +3,9 @@ import 'package:http/http.dart' as http;
 import 'api_exception.dart';
 import 'models/auth_response.dart';
 import 'models/card_info.dart';
+import 'models/cash_out_response.dart';
 import 'models/merchant_item.dart';
+import 'models/merchant_report.dart';
 import 'models/merchant_summary.dart';
 import 'models/parent_portal.dart';
 import 'models/payment_request.dart';
@@ -128,19 +130,36 @@ class SemestaPayApiClient {
   // ==========================================
 
   Future<StudentAuthResponse> studentLogin({
-    required String nis,
-    required String pin,
+    String? nis,
+    String? pin,
+    String? username,
+    String? password,
+    String? identifier,
     String deviceName = 'student-flutter-app',
   }) async {
     final url = Uri.parse('$baseUrl/auth/student-login');
+    final payload = <String, dynamic>{
+      'device_name': deviceName,
+    };
+
+    if (username != null && username.isNotEmpty) {
+      payload['username'] = username;
+    } else if (identifier != null && identifier.isNotEmpty) {
+      payload['username'] = identifier;
+    } else if (nis != null && nis.isNotEmpty) {
+      payload['nis'] = nis;
+    }
+
+    if (password != null && password.isNotEmpty) {
+      payload['password'] = password;
+    } else if (pin != null && pin.isNotEmpty) {
+      payload['pin'] = pin;
+    }
+
     final response = await _client.post(
       url,
       headers: _buildHeaders(),
-      body: jsonEncode({
-        'nis': nis,
-        'pin': pin,
-        'device_name': deviceName,
-      }),
+      body: jsonEncode(payload),
     );
 
     final data = _processResponse(response) as Map<String, dynamic>;
@@ -256,6 +275,72 @@ class SemestaPayApiClient {
   }
 
   // ==========================================
+  // PROFILES & AVATARS
+  // ==========================================
+
+  Future<StudentProfile> getStudentProfile() async {
+    final url = Uri.parse('$baseUrl/profile/student');
+    final response = await _client.get(url, headers: _buildHeaders());
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return StudentProfile.fromJson(
+      data['student'] as Map<String, dynamic>? ?? data,
+    );
+  }
+
+  Future<StudentProfile> updateStudentProfile(Map<String, dynamic> body) async {
+    final url = Uri.parse('$baseUrl/profile/student');
+    final response = await _client.put(
+      url,
+      headers: _buildHeaders(),
+      body: jsonEncode(body),
+    );
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return StudentProfile.fromJson(
+      data['student'] as Map<String, dynamic>? ?? data,
+    );
+  }
+
+  Future<String> uploadStudentAvatar(String base64Image) async {
+    final url = Uri.parse('$baseUrl/profile/student/avatar');
+    final response = await _client.post(
+      url,
+      headers: _buildHeaders(),
+      body: jsonEncode({'avatar': base64Image}),
+    );
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return (data['avatar_url'] as String?) ?? '';
+  }
+
+  Future<User> getUserProfile() async {
+    final url = Uri.parse('$baseUrl/profile/me');
+    final response = await _client.get(url, headers: _buildHeaders());
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return User.fromJson(data['user'] as Map<String, dynamic>? ?? data);
+  }
+
+  Future<User> updateUserProfile(Map<String, dynamic> body) async {
+    final url = Uri.parse('$baseUrl/profile/me');
+    final response = await _client.put(
+      url,
+      headers: _buildHeaders(),
+      body: jsonEncode(body),
+    );
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return User.fromJson(data['user'] as Map<String, dynamic>? ?? data);
+  }
+
+  Future<String> uploadUserAvatar(String base64Image) async {
+    final url = Uri.parse('$baseUrl/profile/me/avatar');
+    final response = await _client.post(
+      url,
+      headers: _buildHeaders(),
+      body: jsonEncode({'avatar': base64Image}),
+    );
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return (data['avatar_url'] as String?) ?? '';
+  }
+
+  // ==========================================
   // MERCHANT PORTAL
   // ==========================================
 
@@ -267,6 +352,73 @@ class SemestaPayApiClient {
     return MerchantSummary.fromJson(
       data['merchant'] as Map<String, dynamic>? ?? data,
     );
+  }
+
+  Future<Map<String, dynamic>> getMerchantProfile() async {
+    final url = Uri.parse('$baseUrl/merchant/profile');
+    final response = await _client.get(url, headers: _buildHeaders());
+    return _processResponse(response) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateMerchantProfile(
+      Map<String, dynamic> body) async {
+    final url = Uri.parse('$baseUrl/merchant/profile');
+    final response = await _client.put(
+      url,
+      headers: _buildHeaders(),
+      body: jsonEncode(body),
+    );
+    return _processResponse(response) as Map<String, dynamic>;
+  }
+
+  Future<CashOutResponse> cashOut({
+    required String cardUid,
+    required double amount,
+    String? pin,
+    String? note,
+    String? outletCode,
+    String? idempotencyKey,
+  }) async {
+    final url = Uri.parse('$baseUrl/merchant/cash-out');
+    final payload = <String, dynamic>{
+      'card_uid': cardUid,
+      'amount': amount,
+      'idempotency_key': idempotencyKey ??
+          'cashout_${DateTime.now().millisecondsSinceEpoch}_$cardUid',
+    };
+    if (pin != null && pin.isNotEmpty) payload['pin'] = pin;
+    if (note != null && note.isNotEmpty) payload['note'] = note;
+    if (outletCode != null && outletCode.isNotEmpty) {
+      payload['outlet_code'] = outletCode;
+    }
+
+    final response = await _client.post(
+      url,
+      headers: _buildHeaders(),
+      body: jsonEncode(payload),
+    );
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return CashOutResponse.fromJson(data);
+  }
+
+  Future<MerchantReport> getMerchantReports({
+    String period = 'day',
+    String? date,
+    String? month,
+    String? start,
+    String? end,
+  }) async {
+    final params = <String, String>{'period': period};
+    if (date != null && date.isNotEmpty) params['date'] = date;
+    if (month != null && month.isNotEmpty) params['month'] = month;
+    if (start != null && start.isNotEmpty) params['start'] = start;
+    if (end != null && end.isNotEmpty) params['end'] = end;
+
+    final query = Uri(queryParameters: params).query;
+    final url = Uri.parse('$baseUrl/merchant/reports?$query');
+    final response = await _client.get(url, headers: _buildHeaders());
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return MerchantReport.fromJson(data);
   }
 
   // ==========================================

@@ -8,13 +8,14 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'phone', 'email', 'password', 'status'])]
+#[Fillable(['name', 'username', 'phone', 'email', 'avatar_path', 'password', 'status', 'merchant_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -40,6 +41,19 @@ class User extends Authenticatable implements FilamentUser
     public function cashiers(): HasMany
     {
         return $this->hasMany(Cashier::class);
+    }
+
+    /**
+     * @return BelongsTo<Merchant, $this>
+     */
+    public function merchant(): BelongsTo
+    {
+        return $this->belongsTo(Merchant::class);
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? asset($this->avatar_path) : null;
     }
 
     /**

@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable([
-    'nis', 'name', 'class_id', 'phone_parent', 'pin_hash', 'status',
+    'nis', 'username', 'name', 'class_id', 'phone_parent', 'pin_hash', 'status',
+    'email', 'password_hash', 'avatar_path', 'nik', 'gender', 'birth_date',
+    'address', 'parent_name', 'parent_email',
     'card_uid', 'card_status', 'card_assigned_at',
     'balance', 'currency', 'wallet_status', 'balance_updated_at', 'version',
     'daily_limit',
@@ -28,9 +30,29 @@ class Student extends Model implements AuthenticatableContract
             'balance' => 'decimal:2',
             'balance_updated_at' => 'datetime',
             'card_assigned_at' => 'datetime',
+            'birth_date' => 'date',
             'daily_limit' => 'decimal:2',
             'version' => 'integer',
         ];
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? asset($this->avatar_path) : null;
+    }
+
+    public function hasPassword(): bool
+    {
+        return $this->password_hash !== null;
+    }
+
+    public function verifyPassword(string $password): bool
+    {
+        if (! $this->hasPassword()) {
+            return false;
+        }
+
+        return Hash::check($password, $this->password_hash);
     }
 
     /**
