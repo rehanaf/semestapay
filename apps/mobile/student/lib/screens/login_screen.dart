@@ -14,7 +14,7 @@ class StudentLoginScreen extends StatefulWidget {
 class _StudentLoginScreenState extends State<StudentLoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _identifierController = TextEditingController(text: '2026-001');
+  final _identifierController = TextEditingController(text: 'ajeng@cendana.sch.id');
   final _passwordController = TextEditingController(text: 'password');
 
   bool _obscurePassword = true;
@@ -136,8 +136,10 @@ class _StudentLoginScreenState extends State<StudentLoginScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 26),
+                      const SizedBox(height: 20),
                       _buildFormCard(),
+                      const SizedBox(height: 18),
+                      _buildDemoCard(),
                       const SizedBox(height: 20),
                       _buildSecurityFooter(),
                       const SizedBox(height: 24),
@@ -301,6 +303,91 @@ class _StudentLoginScreenState extends State<StudentLoginScreen>
             onPressed: _isLoading ? null : _handleLogin,
             isLoading: _isLoading,
             icon: Icons.login_rounded,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _fillDemo(String email) {
+    _identifierController.text = email;
+    _passwordController.text = 'password';
+    setState(() => _errorMessage = null);
+  }
+
+  Widget _buildDemoCard() {
+    const students = [
+      ('Ajeng', 'ajeng@cendana.sch.id'),
+      ('Citra', 'citra@cendana.sch.id'),
+      ('Zikri', 'zikri@cendana.sch.id'),
+      ('Aiko', 'aiko@cendana.sch.id'),
+      ('Ralin', 'ralin@cendana.sch.id'),
+      ('Alya', 'alya@cendana.sch.id'),
+      ('Zaenal', 'zaenal@cendana.sch.id'),
+      ('Zaenab', 'zaenab@cendana.sch.id'),
+      ('Gege', 'gege@cendana.sch.id'),
+      ('Reinhard', 'reinhard@cendana.sch.id'),
+      ('Hafidz', 'hafidz@cendana.sch.id'),
+      ('Althaf', 'althaf@cendana.sch.id'),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bolt_rounded, size: 17, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                'AKUN DEMO — CENDANA SMART LEARNING',
+                style: AppTheme.font(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: students.map((s) {
+              return GestureDetector(
+                onTap: () => _fillDemo(s.$2),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.person_rounded, size: 13, color: AppColors.primary),
+                      const SizedBox(width: 5),
+                      Text(
+                        s.$1,
+                        style: AppTheme.font(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

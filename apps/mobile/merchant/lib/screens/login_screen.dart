@@ -15,7 +15,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'kasir@cashless.dev');
+  final _emailController = TextEditingController(text: 'neneng@cendana.sch.id');
   final _passwordController = TextEditingController(text: 'password');
 
   bool _obscurePassword = true;
@@ -327,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
               const SizedBox(width: 6),
               Text(
-                'AKUN DEMO',
+                'AKUN DEMO — CENDANA SMART LEARNING',
                 style: AppTheme.font(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -343,19 +343,19 @@ class _LoginScreenState extends State<LoginScreen>
             runSpacing: 8,
             children: [
               _demoChip(
-                'Kasir',
+                'Kasir Kantin',
                 Icons.point_of_sale_rounded,
-                () => _fillDemo('kasir@cashless.dev'),
+                () => _fillDemo('neneng@cendana.sch.id'),
               ),
               _demoChip(
-                'Merchant',
+                'Kasir Kopsis',
                 Icons.storefront_rounded,
-                () => _fillDemo('merchant@cashless.dev'),
+                () => _fillDemo('fuji@cendana.sch.id'),
               ),
               _demoChip(
                 'Admin',
                 Icons.admin_panel_settings_rounded,
-                () => _fillDemo('admin@cashless.dev'),
+                () => _fillDemo('admin@cendana.sch.id'),
               ),
             ],
           ),

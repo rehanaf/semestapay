@@ -285,12 +285,12 @@ function AdminLoginForm() {
               </div>
 
               {/* Demo Quick-Fill Buttons */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   className="h-10 text-xs font-semibold rounded-xl border-border/80 hover:bg-primary/5 hover:border-primary/40 cursor-pointer gap-1.5"
-                  onClick={() => fillDemo("admin@cashless.dev")}
+                  onClick={() => fillDemo("admin@cendana.sch.id")}
                 >
                   <Sparkles className="size-3.5 text-amber-500" />
                   Superadmin
@@ -299,10 +299,19 @@ function AdminLoginForm() {
                   type="button"
                   variant="outline"
                   className="h-10 text-xs font-semibold rounded-xl border-border/80 hover:bg-primary/5 hover:border-primary/40 cursor-pointer gap-1.5"
-                  onClick={() => fillDemo("operator@cashless.dev")}
+                  onClick={() => fillDemo("neneng@cendana.sch.id")}
                 >
                   <Sparkles className="size-3.5 text-emerald-500" />
-                  Operator
+                  Kasir Kantin
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 text-xs font-semibold rounded-xl border-border/80 hover:bg-primary/5 hover:border-primary/40 cursor-pointer gap-1.5"
+                  onClick={() => fillDemo("fuji@cendana.sch.id")}
+                >
+                  <Sparkles className="size-3.5 text-blue-500" />
+                  Kasir Kopsis
                 </Button>
               </div>
             </form>
@@ -663,7 +672,7 @@ function AdminDashboardView() {
               </Avatar>
               <div className="overflow-hidden">
                 <p className="text-xs font-semibold truncate text-foreground">{user?.name || "Admin"}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{user?.email || "admin@cashless.dev"}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{user?.email || "admin@cendana.sch.id"}</p>
               </div>
             </div>
             <Button
