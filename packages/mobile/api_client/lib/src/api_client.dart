@@ -506,12 +506,16 @@ class SemestaPayApiClient {
   Future<VirtualAccountInfo> getOrCreateTopupVa({
     double amount = 10000,
     String? paymentMethod,
+    bool forceNew = false,
   }) async {
     final params = <String, String>{
       'amount': amount.toInt().toString(),
     };
     if (paymentMethod != null && paymentMethod.isNotEmpty) {
       params['payment_method'] = paymentMethod;
+    }
+    if (forceNew) {
+      params['force_new'] = '1';
     }
     final url = Uri.parse('$baseUrl/student/topup/va').replace(queryParameters: params);
     final response = await _client.get(url, headers: _buildHeaders());

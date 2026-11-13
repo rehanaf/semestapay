@@ -39,33 +39,31 @@ class DuitkuController extends Controller
         $amount = (float) $request->input('amount', 10000);
         $paymentMethod = (string) $request->input('payment_method', '');
 
-        // Cari VA statis atau VA pending aktif milik student ini
+        $forceNew = $request->boolean('force_new') || $request->boolean('new');
+
+        // Cari VA pending aktif milik santri ini yang belum pernah dibayar
         $query = VirtualAccount::query()
             ->where('provider', DuitkuService::PROVIDER)
             ->where('student_id', $student->id)
-            ->where(function ($q) {
-                $q->where('is_static', true)
-                    ->orWhere(function ($sub) {
-                        $sub->where('status', VirtualAccountStatus::Pending->value)
-                            ->where('expires_at', '>', now());
-                    });
-            });
+            ->whereNull('paid_at')
+            ->where('status', VirtualAccountStatus::Pending->value)
+            ->where('expires_at', '>', now());
 
         if ($paymentMethod !== '') {
             $query->where('payment_code', strtoupper($paymentMethod));
         }
 
-        $existing = $query->latest('created_at')->first();
+        $existing = $forceNew ? null : $query->latest('created_at')->first();
 
         if ($existing !== null) {
             return response()->json([
-                'message' => 'Virtual Account statis santri aktif.',
+                'message' => 'Virtual Account santri aktif.',
                 'virtual_account' => $this->virtualAccountPayload($existing),
                 'is_new' => false,
             ]);
         }
 
-        // Tidak ada VA aktif — buat VA statis baru
+        // Tidak ada VA aktif — buat VA baru
         try {
             $virtualAccount = $this->duitku->createVirtualAccount(
                 student: $student,
@@ -78,7 +76,7 @@ class DuitkuController extends Controller
         }
 
         return response()->json([
-            'message' => 'Virtual account statis santri berhasil dibuat.',
+            'message' => 'Virtual account santri berhasil dibuat.',
             'virtual_account' => $this->virtualAccountPayload($virtualAccount),
             'is_new' => true,
         ], 201);

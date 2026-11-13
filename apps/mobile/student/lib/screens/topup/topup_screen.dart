@@ -38,7 +38,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
     _fetchVa();
   }
 
-  Future<void> _fetchVa({String? paymentMethod}) async {
+  Future<void> _fetchVa({String? paymentMethod, bool forceNew = false}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -49,6 +49,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
       final va = await widget.api.getOrCreateTopupVa(
         amount: 10000,
         paymentMethod: method,
+        forceNew: forceNew,
       );
 
       if (!mounted) return;
@@ -98,8 +99,8 @@ class _TopUpScreenState extends State<TopUpScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Muat ulang',
-            onPressed: _isLoading ? null : () => _fetchVa(),
+            tooltip: 'Buat / Muat ulang VA',
+            onPressed: _isLoading ? null : () => _fetchVa(forceNew: true),
           ),
         ],
       ),
@@ -172,7 +173,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
             : 'SEMESTA SANTRI');
 
     return RefreshIndicator(
-      onRefresh: () => _fetchVa(),
+      onRefresh: () => _fetchVa(forceNew: true),
       color: AppColors.primary,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
@@ -215,7 +216,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
                               const Icon(Icons.verified_rounded, size: 14, color: Colors.white),
                               const SizedBox(width: 5),
                               Text(
-                                'VA STATIS PERMANEN',
+                                'VIRTUAL ACCOUNT RESMI',
                                 style: AppTheme.font(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -345,9 +346,24 @@ class _TopUpScreenState extends State<TopUpScreen> {
           // ── Informasi Open Amount ──────────────────────────────────────────
           _InfoBox(
             icon: Icons.info_outline_rounded,
-            title: 'Bebas Transfer Berapapun (Open Amount)',
+            title: 'Top Up Otomatis Masuk ke Saldo',
             text:
-                'Nomor Virtual Account ini permanen khusus untuk santri ini. Transfer dengan nominal berapapun dari m-banking atau ATM akan otomatis masuk ke saldo santri tanpa perlu konfirmasi manual.',
+                'Transfer ke nomor Virtual Account di atas melalui m-banking, ATM, atau simulator. Saldo santri akan otomatis bertambah secara instan. Setelah pembayaran selesai, sistem otomatis menyediakan nomor VA baru untuk top-up berikutnya.',
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: Color(0xFFD0D7DE)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            onPressed: _isLoading ? null : () => _fetchVa(forceNew: true),
+            icon: const Icon(Icons.autorenew_rounded, size: 18),
+            label: Text(
+              'Buat Tagihan / VA Baru',
+              style: AppTheme.font(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
           ),
           const SizedBox(height: 16),
 

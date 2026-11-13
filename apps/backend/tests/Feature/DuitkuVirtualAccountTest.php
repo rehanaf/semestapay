@@ -216,6 +216,61 @@ class DuitkuVirtualAccountTest extends TestCase
         $this->assertDatabaseCount('transactions', 1);
     }
 
+    public function test_student_topup_va_returns_unpaid_and_generates_new_after_paid(): void
+    {
+        Http::fake([
+            'sandbox.duitku.com/*' => Http::response([
+                'reference' => 'D0001REFNEW',
+                'paymentUrl' => 'https://sandbox.duitku.com/payment/D0001REFNEW',
+                'vaNumber' => '7007014009999999',
+                'amount' => '10000',
+                'statusCode' => '00',
+                'statusMessage' => 'SUCCESS',
+            ]),
+        ]);
+
+        $student = Student::factory()->create(['balance' => 0]);
+        // VA lama yang sudah dibayar
+        $oldVa = $this->makeVirtualAccount($student, 50000, isStatic: true);
+        $oldVa->update(['paid_at' => now()]);
+
+        $response = $this->actingAs($student, 'sanctum')->getJson('/api/v1/student/topup/va?payment_method=BC');
+
+        $response->assertCreated()
+            ->assertJsonPath('is_new', true)
+            ->assertJsonPath('virtual_account.account_number', '7007014009999999');
+
+        // Panggilan kedua saat VA baru masih belum dibayar akan mengembalikan VA yang sama
+        $response2 = $this->actingAs($student, 'sanctum')->getJson('/api/v1/student/topup/va?payment_method=BC');
+
+        $response2->assertOk()
+            ->assertJsonPath('is_new', false)
+            ->assertJsonPath('virtual_account.account_number', '7007014009999999');
+    }
+
+    public function test_student_topup_va_generates_new_when_force_new_requested(): void
+    {
+        Http::fake([
+            'sandbox.duitku.com/*' => Http::response([
+                'reference' => 'D0001REFFORCE',
+                'paymentUrl' => 'https://sandbox.duitku.com/payment/D0001REFFORCE',
+                'vaNumber' => '7007014008888888',
+                'amount' => '10000',
+                'statusCode' => '00',
+                'statusMessage' => 'SUCCESS',
+            ]),
+        ]);
+
+        $student = Student::factory()->create(['balance' => 0]);
+        $unpaidVa = $this->makeVirtualAccount($student, 10000, isStatic: true);
+
+        $response = $this->actingAs($student, 'sanctum')->getJson('/api/v1/student/topup/va?payment_method=BC&force_new=1');
+
+        $response->assertCreated()
+            ->assertJsonPath('is_new', true)
+            ->assertJsonPath('virtual_account.account_number', '7007014008888888');
+    }
+
     private function makeVirtualAccount(Student $student, int $amount, bool $isStatic = false): VirtualAccount
     {
         return VirtualAccount::create([
