@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'name', 'type', 'owner_name', 'phone', 'email', 'address', 'description',
-    'logo_path', 'status', 'balance',
+    'logo_path', 'status', 'balance', 'daily_limit',
 ])]
 class Merchant extends Model
 {

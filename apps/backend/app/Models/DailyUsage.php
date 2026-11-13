@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['student_id', 'usage_date', 'total_used'])]
+#[Fillable(['student_id', 'merchant_id', 'usage_date', 'total_used'])]
 class DailyUsage extends Model
 {
     protected function casts(): array
@@ -23,5 +23,13 @@ class DailyUsage extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    /**
+     * @return BelongsTo<Merchant, $this>
+     */
+    public function merchant(): BelongsTo
+    {
+        return $this->belongsTo(Merchant::class);
     }
 }

@@ -71,7 +71,7 @@ class WalletService
     }
 
     /**
-     * Pembayaran gesek di outlet (debit wallet, ken limit harian).
+     * Pembayaran gesek di outlet (debit wallet, cek limit harian per merchant).
      */
     public function pay(
         Student $student,
@@ -88,10 +88,12 @@ class WalletService
             throw new ShiftNotOpenException('Shift kasir outlet belum dibuka.');
         }
 
+        $outlet->loadMissing('merchant');
+
         return $this->mutate($student, $idempotencyKey, function (Student $student) use (
             $amount, $outlet, $shift, $actor, $note, $idempotencyKey,
         ) {
-            $this->charge($student, $amount, countDailyUsage: true);
+            $this->charge($student, $amount, outlet: $outlet);
 
             $tx = $this->newTransaction(TransactionType::Payment, $student, $amount, $idempotencyKey, [
                 'outlet_id' => $outlet->id,
@@ -190,7 +192,7 @@ class WalletService
             if ($difference > 0) {
                 $this->credit($student, $difference);
             } else {
-                $this->charge($student, abs($difference), countDailyUsage: false);
+                $this->charge($student, abs($difference));
             }
 
             $tx = $this->newTransaction(TransactionType::Adjustment, $student, abs($difference), $idempotencyKey, [
@@ -243,7 +245,7 @@ class WalletService
         return $this->mutate($bill->student, $idempotencyKey, function (Student $student) use (
             $bill, $remaining, $actor, $idempotencyKey,
         ) {
-            $this->charge($student, $remaining, countDailyUsage: false);
+            $this->charge($student, $remaining);
 
             $tx = $this->newTransaction(TransactionType::BillPayment, $student, $remaining, $idempotencyKey, [
                 'reference_type' => 'bill',
@@ -296,7 +298,7 @@ class WalletService
             $original, $by, $reason, $isCashOut, $idempotencyKey,
         ) {
             if ($isCashOut) {
-                $this->charge($student, (float) $original->amount, countDailyUsage: false);
+                $this->charge($student, (float) $original->amount);
             } else {
                 $this->credit($student, (float) $original->amount);
             }
@@ -385,13 +387,22 @@ class WalletService
     /**
      * Kurangi saldo setelah cek cukup & (opsional) limit harian.
      */
-    private function charge(Student $student, float $amount, bool $countDailyUsage): void
+    /**
+     * Kurangi saldo setelah cek limit harian per merchant (dan global student).
+     *
+     * @param  ?Outlet  $outlet  Outlet transaksi; null = tidak kena limit (topup, reversal, dll).
+     */
+    private function charge(Student $student, float $amount, ?Outlet $outlet = null): void
     {
         if ($amount <= 0) {
             throw new InsufficientBalanceException('Nominal harus lebih dari 0.');
         }
 
-        if ($countDailyUsage) {
+        if ($outlet !== null) {
+            // Cek limit harian khusus merchant (mis. kantin Rp 20.000)
+            $this->assertMerchantDailyLimit($student, $amount, $outlet);
+
+            // Cek limit harian global student
             $this->assertDailyLimit($student, $amount);
         }
 
@@ -402,8 +413,9 @@ class WalletService
         $student->balance = (float) $student->balance - $amount;
         $this->persistStudent($student);
 
-        if ($countDailyUsage) {
-            $this->incrementDailyUsage($student->id, $amount);
+        if ($outlet !== null) {
+            $merchantId = $outlet->merchant_id;
+            $this->incrementDailyUsage($student->id, $amount, $merchantId);
         }
     }
 
@@ -413,6 +425,9 @@ class WalletService
         $this->persistStudent($student);
     }
 
+    /**
+     * Cek limit harian global student (semua merchant digabung).
+     */
     private function assertDailyLimit(Student $student, float $amount): void
     {
         $limit = (float) $student->daily_limit;
@@ -421,24 +436,63 @@ class WalletService
             return;
         }
 
-        $usedValue = DailyUsage::where('student_id', $student->id)
+        $used = (float) DailyUsage::where('student_id', $student->id)
+            ->whereNull('merchant_id')
             ->where('usage_date', today())
-            ->value('total_used');
-        $used = $usedValue === null ? 0 : (float) $usedValue;
+            ->sum('total_used');
 
         if ($used + $amount > $limit) {
             throw new DailyLimitExceededException('Melebihi batas belanja harian.');
         }
     }
 
-    private function incrementDailyUsage(int $studentId, float $amount): void
+    /**
+     * Cek limit harian khusus merchant (mis. kantin Rp 20.000/hari).
+     */
+    private function assertMerchantDailyLimit(Student $student, float $amount, Outlet $outlet): void
     {
+        $merchant = $outlet->merchant;
+        $limit = $merchant?->daily_limit !== null ? (float) $merchant->daily_limit : 0;
+
+        if ($limit <= 0) {
+            return;
+        }
+
+        $used = (float) DailyUsage::where('student_id', $student->id)
+            ->where('merchant_id', $outlet->merchant_id)
+            ->where('usage_date', today())
+            ->sum('total_used');
+
+        if ($used + $amount > $limit) {
+            throw new DailyLimitExceededException(
+                'Melebihi batas belanja harian di '.$merchant->name
+                .' (maks Rp '.number_format($limit, 0, ',', '.').'/hari).',
+            );
+        }
+    }
+
+    /**
+     * Catat pemakaian harian per merchant dan global (merchant_id=NULL).
+     */
+    private function incrementDailyUsage(int $studentId, float $amount, int $merchantId): void
+    {
+        // Rekam per merchant
         DailyUsage::firstOrCreate(
-            ['student_id' => $studentId, 'usage_date' => today()],
+            ['student_id' => $studentId, 'merchant_id' => $merchantId, 'usage_date' => today()],
             ['total_used' => 0],
         );
-
         DailyUsage::where('student_id', $studentId)
+            ->where('merchant_id', $merchantId)
+            ->where('usage_date', today())
+            ->increment('total_used', $amount);
+
+        // Rekam global (merchant_id = NULL) untuk cek daily_limit student
+        DailyUsage::firstOrCreate(
+            ['student_id' => $studentId, 'merchant_id' => null, 'usage_date' => today()],
+            ['total_used' => 0],
+        );
+        DailyUsage::where('student_id', $studentId)
+            ->whereNull('merchant_id')
             ->where('usage_date', today())
             ->increment('total_used', $amount);
     }

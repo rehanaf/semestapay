@@ -93,8 +93,18 @@ class WalletServiceTest extends TestCase
 
         $this->assertSame('payment', $tx->type);
         $this->assertSame(90000.0, (float) $student->refresh()->balance);
-        $usage = DailyUsage::where('student_id', $student->id)->where('usage_date', today())->first();
-        $this->assertSame(10000.0, (float) $usage->total_used);
+        // Per-merchant usage
+        $merchantUsage = DailyUsage::where('student_id', $student->id)
+            ->where('merchant_id', $outlet->merchant_id)
+            ->where('usage_date', today())
+            ->first();
+        $this->assertSame(10000.0, (float) $merchantUsage->total_used);
+        // Global usage (merchant_id = NULL)
+        $globalUsage = DailyUsage::where('student_id', $student->id)
+            ->whereNull('merchant_id')
+            ->where('usage_date', today())
+            ->first();
+        $this->assertSame(10000.0, (float) $globalUsage->total_used);
         $this->assertSame($shift->id, $tx->cashier_shift_id);
     }
 
