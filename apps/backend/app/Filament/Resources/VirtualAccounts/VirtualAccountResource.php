@@ -41,9 +41,9 @@ class VirtualAccountResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => ListVirtualAccounts::route('/'),
+            'index' => ListVirtualAccounts::route('/'),
             'create' => CreateVirtualAccount::route('/create'),
-            'edit'   => EditVirtualAccount::route('/{record}/edit'),
+            'edit' => EditVirtualAccount::route('/{record}/edit'),
         ];
     }
 }

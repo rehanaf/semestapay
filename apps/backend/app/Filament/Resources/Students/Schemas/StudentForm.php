@@ -45,7 +45,7 @@ class StudentForm
                 Select::make('gender')
                     ->label('Jenis Kelamin')
                     ->options([
-                        'male'   => 'Laki-laki',
+                        'male' => 'Laki-laki',
                         'female' => 'Perempuan',
                     ]),
 
@@ -58,19 +58,19 @@ class StudentForm
                 Select::make('religion')
                     ->label('Agama')
                     ->options([
-                        'islam'     => 'Islam',
-                        'kristen'   => 'Kristen',
-                        'katolik'   => 'Katolik',
-                        'hindu'     => 'Hindu',
-                        'buddha'    => 'Buddha',
-                        'konghucu'  => 'Konghucu',
-                        'lainnya'   => 'Lainnya',
+                        'islam' => 'Islam',
+                        'kristen' => 'Kristen',
+                        'katolik' => 'Katolik',
+                        'hindu' => 'Hindu',
+                        'buddha' => 'Buddha',
+                        'konghucu' => 'Konghucu',
+                        'lainnya' => 'Lainnya',
                     ]),
 
                 Select::make('marital_status')
                     ->label('Status Pernikahan')
                     ->options([
-                        'single'  => 'Belum Menikah',
+                        'single' => 'Belum Menikah',
                         'married' => 'Menikah',
                         'divorce' => 'Cerai',
                     ])
@@ -107,7 +107,7 @@ class StudentForm
                     ->label('Status Santri')
                     ->required()
                     ->options([
-                        'active'   => 'Aktif',
+                        'active' => 'Aktif',
                         'inactive' => 'Nonaktif',
                     ])
                     ->default('active'),
@@ -120,9 +120,9 @@ class StudentForm
                 Select::make('card_status')
                     ->label('Status Kartu')
                     ->options([
-                        'active'  => 'Aktif',
+                        'active' => 'Aktif',
                         'blocked' => 'Diblokir',
-                        'lost'    => 'Hilang',
+                        'lost' => 'Hilang',
                     ])
                     ->default('active'),
 

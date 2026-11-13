@@ -149,6 +149,7 @@ class DuitkuService
         float $amount,
         ?string $paymentMethod = null,
         ?string $merchantOrderId = null,
+        bool $isStatic = false,
     ): VirtualAccount {
         $paymentAmount = $this->normalizeAmount($amount);
         $paymentMethod = $paymentMethod !== null && $paymentMethod !== ''
@@ -177,13 +178,15 @@ class DuitkuService
             'provider_reference' => $body['reference'] ?? null,
             'amount' => $paymentAmount,
             'status' => VirtualAccountStatus::Pending->value,
+            'is_static' => $isStatic,
             'payment_url' => $body['paymentUrl'] ?? null,
-            'expires_at' => now()->addMinutes($this->expiryPeriod()),
+            'expires_at' => $isStatic ? now()->addYears(5) : now()->addMinutes($this->expiryPeriod()),
             'request_payload' => $payload,
             'response_payload' => $body,
             'metadata' => [
                 'payment_method_name' => self::PAYMENT_METHODS[$paymentMethod] ?? $paymentMethod,
                 'customer_name' => $student->name,
+                'is_static' => $isStatic,
             ],
         ]);
     }

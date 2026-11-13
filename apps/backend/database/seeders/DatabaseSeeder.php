@@ -270,6 +270,7 @@ class DatabaseSeeder extends Seeder
                     student: $student,
                     amount: 50000, // nominal top up default Rp 50.000
                     paymentMethod: $method,
+                    isStatic: true,
                 );
                 $this->command?->info("  ✓ {$student->name} → {$va->bank_name}: {$va->account_number}");
             } catch (DuitkuException $e) {

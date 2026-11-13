@@ -170,7 +170,39 @@ class DuitkuVirtualAccountTest extends TestCase
         $this->assertSame(10000.0, (float) $student->fresh()->balance);
     }
 
-    private function makeVirtualAccount(Student $student, int $amount): VirtualAccount
+    public function test_callback_static_va_accepts_open_amount_and_keeps_pending_status(): void
+    {
+        $student = Student::factory()->create(['balance' => 10000]);
+        // VA statis dengan order awal 10.000
+        $virtualAccount = $this->makeVirtualAccount($student, 10000, isStatic: true);
+
+        // Transfer nominal bebas/open amount: misal Rp 75.000
+        $payload = $this->validCallbackPayload($virtualAccount, 75000);
+
+        $this->post('/api/v1/payments/duitku/callback', $payload)->assertOk();
+
+        // Saldo bertambah 75.000 (10.000 + 75.000 = 85.000)
+        $this->assertSame(85000.0, (float) $student->fresh()->balance);
+        // Status VA tetap pending sehingga bisa digunakan lagi
+        $this->assertSame(VirtualAccountStatus::Pending->value, $virtualAccount->fresh()->status);
+
+        // Transfer kedua dengan referensi baru Rp 25.000
+        $payload2 = $this->validCallbackPayload($virtualAccount, 25000);
+        $payload2['reference'] = 'D0001REF456';
+        $payload2['signature'] = hash_hmac(
+            'sha256',
+            self::MERCHANT_CODE.'25000'.$virtualAccount->merchant_order_id,
+            self::API_KEY,
+        );
+
+        $this->post('/api/v1/payments/duitku/callback', $payload2)->assertOk();
+
+        // Saldo bertambah lagi (85.000 + 25.000 = 110.000)
+        $this->assertSame(110000.0, (float) $student->fresh()->balance);
+        $this->assertDatabaseCount('transactions', 2);
+    }
+
+    private function makeVirtualAccount(Student $student, int $amount, bool $isStatic = false): VirtualAccount
     {
         return VirtualAccount::create([
             'student_id' => $student->id,
@@ -182,7 +214,8 @@ class DuitkuVirtualAccountTest extends TestCase
             'provider_reference' => 'D0001REF123',
             'amount' => $amount,
             'status' => VirtualAccountStatus::Pending->value,
-            'expires_at' => now()->addMinutes(60),
+            'is_static' => $isStatic,
+            'expires_at' => $isStatic ? now()->addYears(5) : now()->addMinutes(60),
         ]);
     }
 

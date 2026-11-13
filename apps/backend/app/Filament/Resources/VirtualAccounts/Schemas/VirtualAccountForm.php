@@ -4,7 +4,6 @@ namespace App\Filament\Resources\VirtualAccounts\Schemas;
 
 use App\Services\Payment\DuitkuService;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -69,8 +68,8 @@ class VirtualAccountForm
                     ->label('Status')
                     ->options([
                         'pending' => 'Menunggu',
-                        'paid'    => 'Lunas',
-                        'failed'  => 'Gagal',
+                        'paid' => 'Lunas',
+                        'failed' => 'Gagal',
                         'expired' => 'Kedaluarsa',
                     ])
                     ->disabled()

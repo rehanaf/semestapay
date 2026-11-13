@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:semestapay_api_client/semestapay_api_client.dart';
@@ -33,7 +34,9 @@ class StudentState extends ChangeNotifier {
     _student = auth.student;
     api.setToken(auth.token);
     notifyListeners();
-    await refresh();
+    // Sinkronisasi dashboard & mutasi dilakukan secara asinkron di latar belakang
+    // agar transisi masuk ke layar utama santri berlangsung instan.
+    unawaited(refresh());
   }
 
   void updateStudent(StudentProfile profile) {

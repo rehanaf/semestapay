@@ -66,11 +66,11 @@ class VirtualAccountsRelationManager extends RelationManager
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'paid'    => 'success',
+                        'paid' => 'success',
                         'pending' => 'warning',
-                        'failed'  => 'danger',
+                        'failed' => 'danger',
                         'expired' => 'gray',
-                        default   => 'gray',
+                        default => 'gray',
                     }),
 
                 TextColumn::make('expires_at')

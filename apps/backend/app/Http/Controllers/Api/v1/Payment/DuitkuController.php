@@ -39,37 +39,46 @@ class DuitkuController extends Controller
         $amount = (float) $request->input('amount', 10000);
         $paymentMethod = (string) $request->input('payment_method', '');
 
-        // Cari VA yang masih pending dan belum expired untuk student ini
-        $existing = VirtualAccount::query()
+        // Cari VA statis atau VA pending aktif milik student ini
+        $query = VirtualAccount::query()
             ->where('provider', DuitkuService::PROVIDER)
             ->where('student_id', $student->id)
-            ->where('status', VirtualAccountStatus::Pending->value)
-            ->where('expires_at', '>', now())
-            ->when($paymentMethod !== '', fn ($q) => $q->where('payment_code', strtoupper($paymentMethod)))
-            ->latest('created_at')
-            ->first();
+            ->where(function ($q) {
+                $q->where('is_static', true)
+                    ->orWhere(function ($sub) {
+                        $sub->where('status', VirtualAccountStatus::Pending->value)
+                            ->where('expires_at', '>', now());
+                    });
+            });
+
+        if ($paymentMethod !== '') {
+            $query->where('payment_code', strtoupper($paymentMethod));
+        }
+
+        $existing = $query->latest('created_at')->first();
 
         if ($existing !== null) {
             return response()->json([
-                'message' => 'VA aktif ditemukan.',
+                'message' => 'Virtual Account statis santri aktif.',
                 'virtual_account' => $this->virtualAccountPayload($existing),
                 'is_new' => false,
             ]);
         }
 
-        // Tidak ada VA aktif — buat baru
+        // Tidak ada VA aktif — buat VA statis baru
         try {
             $virtualAccount = $this->duitku->createVirtualAccount(
                 student: $student,
-                amount: $amount,
+                amount: $amount > 0 ? $amount : 10000,
                 paymentMethod: $paymentMethod !== '' ? $paymentMethod : null,
+                isStatic: true,
             );
         } catch (DuitkuException $exception) {
             return response()->json(['message' => $exception->getMessage()], 422);
         }
 
         return response()->json([
-            'message' => 'Virtual account berhasil dibuat.',
+            'message' => 'Virtual account statis santri berhasil dibuat.',
             'virtual_account' => $this->virtualAccountPayload($virtualAccount),
             'is_new' => true,
         ], 201);
@@ -135,22 +144,29 @@ class DuitkuController extends Controller
 
         $merchantOrderId = (string) ($data['merchantOrderId'] ?? '');
         $resultCode = (string) ($data['resultCode'] ?? '');
+        $vaNumber = (string) ($data['vaNumber'] ?? '');
 
         $virtualAccount = VirtualAccount::query()
             ->where('provider', DuitkuService::PROVIDER)
-            ->where('merchant_order_id', $merchantOrderId)
+            ->where(function ($q) use ($merchantOrderId, $vaNumber) {
+                $q->where('merchant_order_id', $merchantOrderId);
+                if ($vaNumber !== '') {
+                    $q->orWhere('account_number', $vaNumber);
+                }
+            })
             ->first();
 
         if ($virtualAccount === null) {
             Log::warning('Duitku callback received for unknown order', [
                 'merchant_order_id' => $merchantOrderId,
+                'va_number' => $vaNumber,
             ]);
 
             return response()->json(['message' => 'Order not found']);
         }
 
         if ($resultCode !== '00') {
-            if (! $virtualAccount->isPaid()) {
+            if (! $virtualAccount->isStatic() && ! $virtualAccount->isPaid()) {
                 $virtualAccount->update([
                     'status' => VirtualAccountStatus::Failed->value,
                     'callback_payload' => $data,
@@ -162,7 +178,17 @@ class DuitkuController extends Controller
 
         $callbackAmount = (float) ($data['amount'] ?? 0);
 
-        if (abs($callbackAmount - (float) $virtualAccount->amount) > 0.01) {
+        if ($callbackAmount <= 0) {
+            Log::error('Duitku callback invalid amount', [
+                'merchant_order_id' => $merchantOrderId,
+                'received' => $callbackAmount,
+            ]);
+
+            return response()->json(['message' => 'Invalid amount'], 422);
+        }
+
+        // Untuk VA non-statis (dynamic), wajib cocok dengan nominal request awal
+        if (! $virtualAccount->isStatic() && abs($callbackAmount - (float) $virtualAccount->amount) > 0.01) {
             Log::error('Duitku callback amount mismatch', [
                 'merchant_order_id' => $merchantOrderId,
                 'expected' => (float) $virtualAccount->amount,
@@ -172,31 +198,53 @@ class DuitkuController extends Controller
             return response()->json(['message' => 'Amount mismatch'], 422);
         }
 
+        $reference = (string) ($data['reference'] ?? '');
+        // Idempotency key per referensi pembayaran unik Duitku
+        $idempotencySeed = $reference !== ''
+            ? "duitku:{$reference}"
+            : "duitku:{$merchantOrderId}:{$callbackAmount}:".now()->format('Y-m-d-H');
+        $idempotencyKey = Uuid::uuid5(Uuid::NAMESPACE_URL, $idempotencySeed)->toString();
+
         try {
-            DB::transaction(function () use ($virtualAccount, $data, $merchantOrderId): void {
+            DB::transaction(function () use ($virtualAccount, $data, $merchantOrderId, $callbackAmount, $idempotencyKey): void {
                 $locked = VirtualAccount::query()
                     ->whereKey($virtualAccount->id)
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if ($locked->isPaid()) {
+                // Jika dynamic VA dan sudah pernah dibayar, abaikan duplikat
+                if (! $locked->isStatic() && $locked->isPaid()) {
                     return;
                 }
 
                 $this->wallets->topup(
                     student: $locked->student,
-                    amount: (float) $locked->amount,
+                    amount: $callbackAmount,
                     method: 'duitku_va',
                     reference: $merchantOrderId,
-                    idempotencyKey: Uuid::uuid5(Uuid::NAMESPACE_URL, 'duitku:'.$merchantOrderId)->toString(),
+                    idempotencyKey: $idempotencyKey,
                 );
 
-                $locked->update([
-                    'status' => VirtualAccountStatus::Paid->value,
+                $metadata = $locked->metadata ?? [];
+                $metadata['last_paid_amount'] = $callbackAmount;
+                $metadata['total_received'] = ((float) ($metadata['total_received'] ?? 0)) + $callbackAmount;
+                $metadata['payments_count'] = (((int) ($metadata['payments_count'] ?? 0)) + 1);
+
+                $updateData = [
                     'paid_at' => now(),
                     'provider_reference' => $data['reference'] ?? $locked->provider_reference,
                     'callback_payload' => $data,
-                ]);
+                    'metadata' => $metadata,
+                ];
+
+                if (! $locked->isStatic()) {
+                    $updateData['status'] = VirtualAccountStatus::Paid->value;
+                } else {
+                    // Static VA tetap pending/aktif agar selalu siap menerima transfer berikutnya
+                    $updateData['status'] = VirtualAccountStatus::Pending->value;
+                }
+
+                $locked->update($updateData);
             });
         } catch (Throwable $exception) {
             Log::error('Failed to process Duitku callback', [
@@ -216,9 +264,14 @@ class DuitkuController extends Controller
      */
     private function virtualAccountPayload(VirtualAccount $virtualAccount): array
     {
+        $student = $virtualAccount->student;
+
         return [
             'id' => $virtualAccount->id,
             'student_id' => $virtualAccount->student_id,
+            'student_name' => $student?->name,
+            'student_nis' => $student?->nis,
+            'account_name' => 'SEMESTA '.strtoupper((string) ($student?->name ?? 'SANTRI')),
             'provider' => $virtualAccount->provider,
             'payment_method' => $virtualAccount->payment_code,
             'bank_name' => $virtualAccount->bank_name,
@@ -227,6 +280,8 @@ class DuitkuController extends Controller
             'reference' => $virtualAccount->provider_reference,
             'amount' => (float) $virtualAccount->amount,
             'status' => $virtualAccount->status,
+            'is_static' => (bool) $virtualAccount->is_static,
+            'is_open_amount' => (bool) $virtualAccount->is_static,
             'payment_url' => $virtualAccount->payment_url,
             'expires_at' => $virtualAccount->expires_at?->toIso8601String(),
         ];

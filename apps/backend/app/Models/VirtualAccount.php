@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'student_id', 'provider', 'payment_code', 'bank_name', 'account_number',
-    'merchant_order_id', 'provider_reference', 'amount', 'status', 'payment_url',
-    'expires_at', 'paid_at', 'request_payload', 'response_payload',
+    'merchant_order_id', 'provider_reference', 'amount', 'status', 'is_static',
+    'payment_url', 'expires_at', 'paid_at', 'request_payload', 'response_payload',
     'callback_payload', 'metadata',
 ])]
 class VirtualAccount extends Model
@@ -22,6 +22,7 @@ class VirtualAccount extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'is_static' => 'boolean',
             'expires_at' => 'datetime',
             'paid_at' => 'datetime',
             'request_payload' => 'array',
@@ -47,5 +48,10 @@ class VirtualAccount extends Model
     public function isPending(): bool
     {
         return $this->status === VirtualAccountStatus::Pending->value;
+    }
+
+    public function isStatic(): bool
+    {
+        return (bool) $this->is_static;
     }
 }

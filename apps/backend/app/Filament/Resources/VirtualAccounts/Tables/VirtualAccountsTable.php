@@ -2,11 +2,9 @@
 
 namespace App\Filament\Resources\VirtualAccounts\Tables;
 
-use App\Enums\VirtualAccountStatus;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -46,11 +44,11 @@ class VirtualAccountsTable
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'paid'    => 'success',
+                        'paid' => 'success',
                         'pending' => 'warning',
-                        'failed'  => 'danger',
+                        'failed' => 'danger',
                         'expired' => 'gray',
-                        default   => 'gray',
+                        default => 'gray',
                     }),
 
                 TextColumn::make('expires_at')
@@ -84,8 +82,8 @@ class VirtualAccountsTable
                     ->label('Status')
                     ->options([
                         'pending' => 'Menunggu',
-                        'paid'    => 'Lunas',
-                        'failed'  => 'Gagal',
+                        'paid' => 'Lunas',
+                        'failed' => 'Gagal',
                         'expired' => 'Kedaluarsa',
                     ]),
 
