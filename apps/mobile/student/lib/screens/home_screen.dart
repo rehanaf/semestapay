@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:semestapay_mobile_ui/semestapay_mobile_ui.dart';
 import '../state/student_state.dart';
+import 'topup/topup_screen.dart';
 import 'transfer/bank_transfer_screen.dart';
 import 'transfer/ewallet_transfer_screen.dart';
 import 'transfer/transfer_screen.dart';
@@ -519,7 +520,14 @@ class _HomePageState extends State<_HomePage> {
                         child: _BalanceActionButton(
                           icon: Icons.add_rounded,
                           label: 'Top Up',
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TopUpScreen(api: widget.state.api),
+                              ),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 10),

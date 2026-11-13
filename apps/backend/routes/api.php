@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\v1\BillController;
 use App\Http\Controllers\Api\v1\CardController;
 use App\Http\Controllers\Api\v1\ItemController;
 use App\Http\Controllers\Api\v1\MerchantController;
+use App\Http\Controllers\Api\v1\Payment\DuitkuController;
 use App\Http\Controllers\Api\v1\PaymentController;
 use App\Http\Controllers\Api\v1\ProfileController;
 use App\Http\Controllers\Api\v1\StudentController;
@@ -27,6 +28,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp'])
         ->middleware('throttle:10,1');
 
+    // Callback Duitku bersifat publik dan tidak memakai token.
+    Route::post('/payments/duitku/callback', [DuitkuController::class, 'callback'])
+        ->name('duitku.callback');
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -47,6 +52,10 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/payments/tap', [PaymentController::class, 'tap']);
         Route::post('/payments/{transaction}/reverse', [PaymentController::class, 'reverse']);
+
+        Route::get('/payments/duitku/methods', [DuitkuController::class, 'methods']);
+        Route::post('/payments/duitku/va', [DuitkuController::class, 'store']);
+        Route::get('/student/topup/va', [DuitkuController::class, 'studentVa']);
 
         Route::get('/bills', [BillController::class, 'index']);
         Route::post('/bills/{bill}/pay', [BillController::class, 'pay']);

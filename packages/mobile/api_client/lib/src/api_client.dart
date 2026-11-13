@@ -12,6 +12,7 @@ import 'models/payment_request.dart';
 import 'models/student_portal.dart';
 import 'models/transaction.dart';
 import 'models/user.dart';
+import 'models/virtual_account.dart';
 
 class SemestaPayApiClient {
   final String baseUrl;
@@ -500,6 +501,22 @@ class SemestaPayApiClient {
         .whereType<Map<String, dynamic>>()
         .map(parser)
         .toList();
+  }
+
+  Future<VirtualAccountInfo> getOrCreateTopupVa({
+    double amount = 10000,
+    String? paymentMethod,
+  }) async {
+    final params = <String, String>{
+      'amount': amount.toInt().toString(),
+    };
+    if (paymentMethod != null && paymentMethod.isNotEmpty) {
+      params['payment_method'] = paymentMethod;
+    }
+    final url = Uri.parse('$baseUrl/student/topup/va').replace(queryParameters: params);
+    final response = await _client.get(url, headers: _buildHeaders());
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return VirtualAccountInfo.fromJson(data);
   }
 
   void dispose() {

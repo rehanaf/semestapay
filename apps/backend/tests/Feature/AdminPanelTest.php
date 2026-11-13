@@ -28,6 +28,23 @@ class AdminPanelTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_super_admin_can_manage_payment_gateway_config(): void
+    {
+        Role::findOrCreate('super-admin', 'web');
+
+        $admin = User::factory()->create(['email' => 'gateway@example.com']);
+        $admin->syncRoles(['super-admin']);
+
+        $this->actingAs($admin, 'web')
+            ->get('/admin/payment-gateway-configs')
+            ->assertSuccessful()
+            ->assertSee('Payment Gateway');
+
+        $this->actingAs($admin, 'web')
+            ->get('/admin/payment-gateway-configs/create')
+            ->assertSuccessful();
+    }
+
     public function test_cashier_is_denied_from_admin_panel(): void
     {
         Role::findOrCreate('cashier', 'web');

@@ -87,6 +87,14 @@ class Student extends Model implements AuthenticatableContract
         return $this->hasMany(Transaction::class);
     }
 
+    /**
+     * @return HasMany<VirtualAccount, $this>
+     */
+    public function virtualAccounts(): HasMany
+    {
+        return $this->hasMany(VirtualAccount::class);
+    }
+
     public function hasPin(): bool
     {
         return $this->pin_hash !== null;

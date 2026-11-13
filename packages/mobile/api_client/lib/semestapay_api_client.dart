@@ -13,3 +13,4 @@ export 'src/models/merchant_report.dart';
 export 'src/models/cash_out_response.dart';
 export 'src/models/student_portal.dart';
 export 'src/models/parent_portal.dart';
+export 'src/models/virtual_account.dart';
