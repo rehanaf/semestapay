@@ -61,20 +61,8 @@ class KioskState extends ChangeNotifier {
 
   // ── Tap kartu ──────────────────────────────────────────────────────────────
 
-  /// UID kartu untuk tombol simulasi tap. Diambil dari santri pertama yang
-  /// kartunya aktif, dengan fallback ke [KioskConfig.demoCardUid].
+  /// UID kartu untuk tombol simulasi tap. Diambil dari konfigurasi demo.
   Future<String> resolveDemoCardUid() async {
-    try {
-      final students = await deviceApi.getStudents();
-      final student = students.firstWhere(
-        (s) => s.hasActiveCard,
-        orElse: () => students.first,
-      );
-      final uid = student.cardUid;
-      if (uid != null && uid.isNotEmpty) return uid;
-    } catch (_) {
-      // Abaikan — kembali ke konstanta demo.
-    }
     return KioskConfig.demoCardUid;
   }
 

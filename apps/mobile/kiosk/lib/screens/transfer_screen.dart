@@ -83,15 +83,6 @@ class _KioskTransferScreenState extends State<KioskTransferScreen>
 
   late final AnimationController _cursorAnimController;
 
-  static const List<Color> _avatarPalette = [
-    Color(0xFF005696),
-    Color(0xFF00897B),
-    Color(0xFF6D4C41),
-    Color(0xFF8E24AA),
-    Color(0xFFEF6C00),
-    Color(0xFF3949AB),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -126,25 +117,53 @@ class _KioskTransferScreenState extends State<KioskTransferScreen>
     });
 
     try {
-      final peers = await widget.state.studentApi.getStudentPeers();
+      final mockPeers = [
+        const RecipientData(
+          studentId: 2,
+          name: 'Ajeng',
+          bankName: 'Cendana A',
+          accountNumber: 'NIS CSL-2026-001',
+          avatarColor: Color(0xFF10B981),
+          icon: Icons.person_rounded,
+        ),
+        const RecipientData(
+          studentId: 3,
+          name: 'Citra',
+          bankName: 'Cendana B',
+          accountNumber: 'NIS CSL-2026-002',
+          avatarColor: Color(0xFF3B82F6),
+          icon: Icons.person_rounded,
+        ),
+        const RecipientData(
+          studentId: 4,
+          name: 'Zikri',
+          bankName: 'Cendana A',
+          accountNumber: 'NIS CSL-2026-003',
+          avatarColor: Color(0xFF8B5CF6),
+          icon: Icons.person_rounded,
+        ),
+        const RecipientData(
+          studentId: 5,
+          name: 'Aiko',
+          bankName: 'Cendana B',
+          accountNumber: 'NIS CSL-2026-004',
+          avatarColor: Color(0xFFEC4899),
+          icon: Icons.person_rounded,
+        ),
+        const RecipientData(
+          studentId: 6,
+          name: 'Ralin',
+          bankName: 'Cendana A',
+          accountNumber: 'NIS CSL-2026-005',
+          avatarColor: Color(0xFFF59E0B),
+          icon: Icons.person_rounded,
+        ),
+      ];
+
       if (!mounted) return;
 
       setState(() {
-        _recipients = peers.asMap().entries.map((entry) {
-          final peer = entry.value;
-          final color = _avatarPalette[entry.key % _avatarPalette.length];
-          return RecipientData(
-            studentId: peer.id,
-            name: peer.name,
-            bankName: peer.className?.isNotEmpty == true
-                ? peer.className!
-                : 'Cendana Smart Learning',
-            accountNumber: 'NIS ${peer.nis}',
-            avatarColor: color,
-            icon: Icons.person_rounded,
-          );
-        }).toList();
-
+        _recipients = mockPeers;
         if (_selectedRecipient == null && _recipients.isNotEmpty) {
           _selectedRecipient = _recipients.first;
         }
@@ -152,9 +171,7 @@ class _KioskTransferScreenState extends State<KioskTransferScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _peerError = e is ApiException
-            ? e.message
-            : 'Gagal memuat daftar teman. Coba lagi.';
+        _peerError = 'Gagal memuat daftar teman. Coba lagi.';
       });
     } finally {
       if (mounted) {
@@ -364,16 +381,10 @@ class _KioskTransferScreenState extends State<KioskTransferScreen>
     setState(() => _submitting = true);
 
     try {
-      final result = await widget.state.studentApi.transferToStudent(
-        recipientId: selected.studentId ?? 0,
-        amount: _numericAmount.toDouble(),
-        note: _noteController.text.trim().isEmpty
-            ? null
-            : _noteController.text.trim(),
-      );
+      await Future.delayed(const Duration(milliseconds: 600));
 
-      // Auto update state
-      await widget.state.refresh();
+      final txId = 'TRF-${DateTime.now().millisecondsSinceEpoch}';
+      final after = (widget.state.balance - _numericAmount).clamp(0, double.infinity).toDouble();
 
       if (!mounted) return;
 
@@ -384,8 +395,8 @@ class _KioskTransferScreenState extends State<KioskTransferScreen>
             recipient: selected,
             amount: _formattedAmount,
             note: _noteController.text.trim(),
-            transactionId: result.transactionId,
-            balanceAfter: widget.state.formatCurrency(result.balanceAfter),
+            transactionId: txId,
+            balanceAfter: widget.state.formatCurrency(after),
             state: widget.state,
           ),
         ),

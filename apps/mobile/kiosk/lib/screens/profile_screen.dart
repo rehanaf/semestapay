@@ -65,7 +65,7 @@ class KioskProfileScreen extends StatelessWidget {
                 _ProfileRow(
                   icon: Icons.school_rounded,
                   label: 'Sekolah',
-                  value: dashboard?.school.name ?? '-',
+                  value: 'Cendana Smart Learning',
                 ),
                 _ProfileRow(
                   icon: Icons.badge_rounded,
