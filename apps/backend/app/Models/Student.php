@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable([
-    'nis', 'username', 'name', 'class_id', 'phone_parent', 'pin_hash', 'status',
-    'email', 'password_hash', 'avatar_path', 'nik', 'gender', 'birth_date',
-    'address', 'parent_name', 'parent_email',
+    'nis', 'username', 'name', 'class_id', 'phone', 'phone_parent', 'pin_hash', 'status',
+    'email', 'password_hash', 'avatar_path', 'nik', 'gender', 'birth_date', 'birth_place',
+    'religion', 'marital_status', 'address', 'parent_name', 'parent_email',
     'card_uid', 'card_status', 'card_assigned_at',
     'balance', 'currency', 'wallet_status', 'balance_updated_at', 'version',
     'daily_limit',
