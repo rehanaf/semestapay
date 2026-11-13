@@ -181,6 +181,27 @@ function AdminLoginForm() {
                 </div>
               )}
 
+              {/* Selector Akun Demo */}
+              <div className="space-y-1">
+                <Label htmlFor="demoAccount" className="text-xs sm:text-sm font-medium text-foreground flex items-center justify-between">
+                  <span>Pilih Akun Demo (Cendana)</span>
+                  <span className="text-[10px] text-primary font-semibold">Uji Coba Langsung</span>
+                </Label>
+                <select
+                  id="demoAccount"
+                  value={email}
+                  onChange={(e) => {
+                    if (e.target.value) fillDemo(e.target.value);
+                  }}
+                  className="w-full h-11 px-3 text-xs sm:text-sm rounded-xl border border-border/80 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium cursor-pointer shadow-xs"
+                >
+                  <option value="">-- Pilih Akun Demo Cendana --</option>
+                  <option value="admin@cendana.sch.id">👑 Superadmin (admin@cendana.sch.id)</option>
+                  <option value="neneng@cendana.sch.id">🍱 Kasir Kantin - Miss Neneng (neneng@cendana.sch.id)</option>
+                  <option value="fuji@cendana.sch.id">🏪 Kasir Kopsis - Ustadz Fuji (fuji@cendana.sch.id)</option>
+                </select>
+              </div>
+
               {/* Email Input */}
               <div className="space-y-1">
                 <Label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">

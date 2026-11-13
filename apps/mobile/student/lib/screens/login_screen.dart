@@ -206,11 +206,79 @@ class _StudentLoginScreenState extends State<StudentLoginScreen>
             SemestaInfoBanner(message: _errorMessage!, isError: true),
             const SizedBox(height: 16),
           ],
+          // Selector Akun Santri
+          InkWell(
+            onTap: _showStudentPicker,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppColors.primary,
+                    child: Text(
+                      _selectedStudent?.name[0] ?? 'S',
+                      style: AppTheme.font(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PILIH AKUN SANTRI DEMO',
+                          style: AppTheme.font(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _selectedStudent != null
+                              ? '${_selectedStudent!.name} (${_selectedStudent!.nis})'
+                              : 'Ketuk untuk memilih dari 12 santri',
+                          style: AppTheme.font(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_drop_down_circle_outlined,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           SemestaTextField(
             controller: _identifierController,
             label: 'Username / Email / NIS',
             hint: 'Contoh: 2026-001 atau username',
             prefixIcon: Icons.person_outline_rounded,
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.people_alt_outlined, color: AppColors.primary, size: 20),
+              tooltip: 'Pilih Santri',
+              onPressed: _showStudentPicker,
+            ),
             keyboardType: TextInputType.text,
             textInputAction: TextInputAction.next,
             validator: (v) =>
@@ -309,28 +377,191 @@ class _StudentLoginScreenState extends State<StudentLoginScreen>
     );
   }
 
-  void _fillDemo(String email) {
+  ({String email, String gender, String name, String nis})? get _selectedStudent {
+    final current = _identifierController.text.trim();
+    for (final s in _studentAccounts) {
+      if (s.email == current || s.nis == current || s.name.toLowerCase() == current.toLowerCase()) {
+        return s;
+      }
+    }
+    return null;
+  }
+
+  void _fillDemo(String email, {bool autoLogin = false}) {
     _identifierController.text = email;
     _passwordController.text = 'password';
     setState(() => _errorMessage = null);
+    if (autoLogin) {
+      _handleLogin();
+    }
+  }
+
+  static const _studentAccounts = [
+    (name: 'Ajeng', email: 'ajeng@cendana.sch.id', nis: 'CSL-2026-001', gender: 'P'),
+    (name: 'Citra', email: 'citra@cendana.sch.id', nis: 'CSL-2026-002', gender: 'P'),
+    (name: 'Zikri', email: 'zikri@cendana.sch.id', nis: 'CSL-2026-003', gender: 'L'),
+    (name: 'Aiko', email: 'aiko@cendana.sch.id', nis: 'CSL-2026-004', gender: 'P'),
+    (name: 'Ralin', email: 'ralin@cendana.sch.id', nis: 'CSL-2026-005', gender: 'P'),
+    (name: 'Alya', email: 'alya@cendana.sch.id', nis: 'CSL-2026-006', gender: 'P'),
+    (name: 'Zaenal', email: 'zaenal@cendana.sch.id', nis: 'CSL-2026-007', gender: 'L'),
+    (name: 'Zaenab', email: 'zaenab@cendana.sch.id', nis: 'CSL-2026-008', gender: 'P'),
+    (name: 'Gege', email: 'gege@cendana.sch.id', nis: 'CSL-2026-009', gender: 'L'),
+    (name: 'Reinhard', email: 'reinhard@cendana.sch.id', nis: 'CSL-2026-010', gender: 'L'),
+    (name: 'Hafidz', email: 'hafidz@cendana.sch.id', nis: 'CSL-2026-011', gender: 'L'),
+    (name: 'Althaf', email: 'althaf@cendana.sch.id', nis: 'CSL-2026-012', gender: 'L'),
+  ];
+
+  void _showStudentPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.only(
+            top: 12,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(ctx).padding.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.school_rounded, color: AppColors.primary, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pilih Akun Santri',
+                          style: AppTheme.font(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Cendana Smart Learning (12 Santri)',
+                          style: AppTheme.font(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.55,
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _studentAccounts.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (_, index) {
+                    final s = _studentAccounts[index];
+                    final isSelected = _identifierController.text == s.email ||
+                        _identifierController.text == s.nis;
+                    return ListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      leading: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: isSelected
+                            ? AppColors.primary
+                            : AppColors.primary.withValues(alpha: 0.1),
+                        child: Text(
+                          s.name[0],
+                          style: AppTheme.font(
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      title: Row(
+                        children: [
+                          Text(
+                            s.name,
+                            style: AppTheme.font(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              s.gender == 'L' ? 'Ikhwan' : 'Akhwat',
+                              style: AppTheme.font(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      subtitle: Text(
+                        '${s.nis} • ${s.email}',
+                        style: AppTheme.font(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20)
+                          : const Icon(Icons.chevron_right_rounded, color: AppColors.textLight, size: 20),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _fillDemo(s.email);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildDemoCard() {
-    const students = [
-      ('Ajeng', 'ajeng@cendana.sch.id'),
-      ('Citra', 'citra@cendana.sch.id'),
-      ('Zikri', 'zikri@cendana.sch.id'),
-      ('Aiko', 'aiko@cendana.sch.id'),
-      ('Ralin', 'ralin@cendana.sch.id'),
-      ('Alya', 'alya@cendana.sch.id'),
-      ('Zaenal', 'zaenal@cendana.sch.id'),
-      ('Zaenab', 'zaenab@cendana.sch.id'),
-      ('Gege', 'gege@cendana.sch.id'),
-      ('Reinhard', 'reinhard@cendana.sch.id'),
-      ('Hafidz', 'hafidz@cendana.sch.id'),
-      ('Althaf', 'althaf@cendana.sch.id'),
-    ];
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -342,45 +573,82 @@ class _StudentLoginScreenState extends State<StudentLoginScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.bolt_rounded, size: 17, color: AppColors.primary),
-              const SizedBox(width: 6),
-              Text(
-                'AKUN DEMO — CENDANA SMART LEARNING',
-                style: AppTheme.font(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
-                  letterSpacing: 0.8,
+              Row(
+                children: [
+                  const Icon(Icons.bolt_rounded, size: 17, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'PILIH AKUN DEMO',
+                    style: AppTheme.font(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: _showStudentPicker,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Semua (12)',
+                        style: AppTheme.font(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.primary),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: students.map((s) {
+            spacing: 6,
+            runSpacing: 6,
+            children: _studentAccounts.map((s) {
+              final isSelected = _identifierController.text == s.email ||
+                  _identifierController.text == s.nis;
               return GestureDetector(
-                onTap: () => _fillDemo(s.$2),
+                onTap: () => _fillDemo(s.email),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: isSelected ? AppColors.primary : AppColors.surface,
                     borderRadius: BorderRadius.circular(9),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.primary.withValues(alpha: 0.25),
+                      width: isSelected ? 1.5 : 1,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.person_rounded, size: 13, color: AppColors.primary),
-                      const SizedBox(width: 5),
+                      Icon(
+                        s.gender == 'L' ? Icons.face_rounded : Icons.face_3_rounded,
+                        size: 13,
+                        color: isSelected ? Colors.white : AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
-                        s.$1,
+                        s.name,
                         style: AppTheme.font(
                           fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          color: isSelected ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
                     ],
