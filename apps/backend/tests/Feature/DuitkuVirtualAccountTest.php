@@ -202,6 +202,20 @@ class DuitkuVirtualAccountTest extends TestCase
         $this->assertDatabaseCount('transactions', 2);
     }
 
+    public function test_artisan_command_simulates_va_payment(): void
+    {
+        $student = Student::factory()->create(['balance' => 20000, 'name' => 'Budi Santoso', 'nis' => 'BUDI-001']);
+        $virtualAccount = $this->makeVirtualAccount($student, 50000, isStatic: true);
+
+        $this->artisan('va:pay', [
+            'identifier' => $virtualAccount->account_number,
+            'amount' => '30000',
+        ])->assertSuccessful();
+
+        $this->assertSame(50000.0, (float) $student->fresh()->balance);
+        $this->assertDatabaseCount('transactions', 1);
+    }
+
     private function makeVirtualAccount(Student $student, int $amount, bool $isStatic = false): VirtualAccount
     {
         return VirtualAccount::create([
