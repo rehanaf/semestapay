@@ -238,8 +238,6 @@ class _EWalletTransferScreenState extends State<EWalletTransferScreen> {
                       itemCount: filtered.length,
                       separatorBuilder: (_, _) => const Divider(
                         height: 1,
-                        indent: 68,
-                        endIndent: 16,
                         color: AppColors.divider,
                       ),
                       itemBuilder: (context, index) {
@@ -651,8 +649,6 @@ class _InputEWalletNumberScreenState extends State<InputEWalletNumberScreen> {
                   itemCount: _allRecents.length,
                   separatorBuilder: (_, _) => const Divider(
                     height: 1,
-                    indent: 68,
-                    endIndent: 16,
                     color: AppColors.divider,
                   ),
                   itemBuilder: (context, index) {

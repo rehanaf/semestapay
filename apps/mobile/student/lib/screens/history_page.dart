@@ -609,8 +609,6 @@ class _HistoryPageState extends State<HistoryPage> {
         itemCount: items.length,
         separatorBuilder: (_, _) => const Divider(
           height: 1,
-          indent: 68,
-          endIndent: 16,
           color: AppColors.divider,
         ),
         itemBuilder: (context, index) {

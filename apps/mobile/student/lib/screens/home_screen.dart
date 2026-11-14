@@ -822,8 +822,6 @@ class _HomePageState extends State<_HomePage> {
                         if (i < transactions.length - 1)
                           const Divider(
                             height: 1,
-                            indent: 72,
-                            endIndent: 20,
                             color: AppColors.divider,
                           ),
                       ],

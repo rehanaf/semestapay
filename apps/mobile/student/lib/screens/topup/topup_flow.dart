@@ -138,7 +138,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
   @override
   Widget build(BuildContext context) {
     final query = _searchQuery.trim().toLowerCase();
-    
+
     // Filtered banks
     final filteredBanks = _banks.where((bank) {
       return query.isEmpty ||
@@ -238,40 +238,55 @@ class _TopUpScreenState extends State<TopUpScreen> {
             ),
             Expanded(
               child: _selectedTab == 0
-                  ? SingleChildScrollView(
+                  ? ListView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Pilih bank untuk Virtual Account',
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 8),
+                          child: Text(
+                            'Pilih Bank Tujuan',
                             style: AppTheme.font(
                               fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          filteredBanks.isEmpty
-                              ? Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 40),
-                                  child: Center(
-                                    child: Text(
-                                      'Bank tidak ditemukan.',
-                                      style: AppTheme.font(
-                                        fontSize: 13,
-                                        color: AppColors.textSecondary,
-                                      ),
+                        ),
+                        filteredBanks.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 40),
+                                child: Center(
+                                  child: Text(
+                                    'Bank tidak ditemukan.',
+                                    style: AppTheme.font(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
-                                )
-                              : ListView.separated(
+                                ),
+                              )
+                            : Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.textPrimary
+                                          .withValues(alpha: 0.04),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: ListView.separated(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
                                   itemCount: filteredBanks.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 10),
+                                  separatorBuilder: (_, __) => const Divider(
+                                    height: 1,
+                                    color: AppColors.divider,
+                                  ),
                                   itemBuilder: (context, index) {
                                     final bank = filteredBanks[index];
                                     return InkWell(
@@ -292,9 +307,11 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                         );
                                         _loadVirtualAccounts();
                                       },
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: SemestaCard(
-                                        padding: const EdgeInsets.all(14),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 14,
+                                        ),
                                         child: Row(
                                           children: [
                                             Container(
@@ -330,6 +347,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                             const Icon(
                                               Icons.chevron_right_rounded,
                                               color: AppColors.textLight,
+                                              size: 22,
                                             ),
                                           ],
                                         ),
@@ -337,8 +355,8 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                     );
                                   },
                                 ),
-                        ],
-                      ),
+                              ),
+                      ],
                     )
                   : RefreshIndicator(
                       onRefresh: _loadVirtualAccounts,
@@ -364,135 +382,182 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                     ),
                                   ],
                                 )
-                              : ListView.separated(
+                              : ListView(
                                   physics: const BouncingScrollPhysics(),
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: filteredVas.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 10),
-                                  itemBuilder: (context, index) {
-                                    final va = filteredVas[index];
-                                    final amountStr = NumberFormat(
-                                      '#,##0',
-                                      'en_US',
-                                    ).format(va.amount).replaceAll(',', '.');
-                                    final statusLabel = switch (va.status) {
-                                      'paid' => 'Dibayar',
-                                      'expired' => 'Kedaluwarsa',
-                                      'failed' => 'Gagal',
-                                      _ => 'Menunggu',
-                                    };
-                                    final statusColor = switch (va.status) {
-                                      'paid' => AppColors.success,
-                                      'expired' || 'failed' => AppColors.error,
-                                      _ => AppColors.warning,
-                                    };
-                                    return InkWell(
-                                      onTap: () async {
-                                        await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                VirtualAccountDetailScreen(
-                                                    virtualAccount: va),
+                                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                                      child: Text(
+                                        'Riwayat Virtual Account',
+                                        style: AppTheme.font(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.textPrimary
+                                                .withValues(alpha: 0.04),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 3),
                                           ),
-                                        );
-                                        _loadVirtualAccounts();
-                                      },
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: SemestaCard(
-                                        padding: const EdgeInsets.all(14),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 42,
-                                              height: 42,
-                                              decoration: BoxDecoration(
-                                                color: AppColors.primary
-                                                    .withValues(alpha: 0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
+                                        ],
+                                      ),
+                                      child: ListView.separated(
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        itemCount: filteredVas.length,
+                                        separatorBuilder: (_, __) =>
+                                            const Divider(
+                                          height: 1,
+                                          color: AppColors.divider,
+                                        ),
+                                        itemBuilder: (context, index) {
+                                          final va = filteredVas[index];
+                                          final amountStr = NumberFormat(
+                                            '#,##0',
+                                            'en_US',
+                                          ).format(va.amount).replaceAll(',', '.');
+                                          final statusLabel = switch (va.status) {
+                                            'paid' => 'Dibayar',
+                                            'expired' => 'Kedaluwarsa',
+                                            'failed' => 'Gagal',
+                                            _ => 'Menunggu',
+                                          };
+                                          final statusColor = switch (va.status) {
+                                            'paid' => AppColors.success,
+                                            'expired' || 'failed' =>
+                                              AppColors.error,
+                                            _ => AppColors.warning,
+                                          };
+                                          return InkWell(
+                                            onTap: () async {
+                                              await Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      VirtualAccountDetailScreen(
+                                                          virtualAccount: va),
+                                                ),
+                                              );
+                                              _loadVirtualAccounts();
+                                            },
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 14,
                                               ),
-                                              child: const Icon(
-                                                Icons.account_balance_rounded,
-                                                color: AppColors.primary,
-                                                size: 20,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
+                                              child: Row(
                                                 children: [
-                                                  Text(
-                                                    va.bankName,
-                                                    style: AppTheme.font(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: AppColors
-                                                          .textPrimary,
+                                                  Container(
+                                                    width: 44,
+                                                    height: 44,
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.primary
+                                                          .withValues(
+                                                              alpha: 0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons
+                                                          .account_balance_rounded,
+                                                      color: AppColors.primary,
+                                                      size: 22,
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    va.accountNumber,
-                                                    style: AppTheme.font(
-                                                      fontSize: 12,
-                                                      color: AppColors
-                                                          .textSecondary,
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          va.bankName,
+                                                          style: AppTheme.font(
+                                                            fontSize: 14,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: AppColors
+                                                                .textPrimary,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        Text(
+                                                          va.accountNumber,
+                                                          style: AppTheme.font(
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            color: AppColors
+                                                                .textSecondary,
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
+                                                  ),
+                                                  Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .end,
+                                                    children: [
+                                                      Text(
+                                                        'Rp $amountStr',
+                                                        style: AppTheme.font(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: AppColors
+                                                              .textPrimary,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Container(
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 2,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: statusColor
+                                                              .withValues(
+                                                                  alpha: 0.12),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                                      10),
+                                                        ),
+                                                        child: Text(
+                                                          statusLabel,
+                                                          style: AppTheme.font(
+                                                            fontSize: 10,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: statusColor,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ],
                                               ),
                                             ),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  'Rp $amountStr',
-                                                  style: AppTheme.font(
-                                                    fontSize: 13,
-                                                    fontWeight:
-                                                        FontWeight.w700,
-                                                    color:
-                                                        AppColors.textPrimary,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 2,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: statusColor
-                                                        .withValues(
-                                                            alpha: 0.12),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            10),
-                                                  ),
-                                                  child: Text(
-                                                    statusLabel,
-                                                    style: AppTheme.font(
-                                                      fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: statusColor,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
+                                          );
+                                        },
                                       ),
-                                    );
-                                  },
+                                    ),
+                                  ],
                                 ),
                     ),
             ),
@@ -590,7 +655,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
 
   Widget _buildSelectedBank() {
     return SemestaCard(
-      padding: const EdgeInsets.all(14,),
+      padding: const EdgeInsets.all(14),
       child: Row(
         children: [
           Container(
