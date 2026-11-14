@@ -83,7 +83,14 @@ class SimulateVirtualAccountPaymentCommand extends Command
 
         $merchantCode = $duitku->merchantCode();
         $apiKey = $duitku->apiKey();
-        $merchantOrderId = $va->merchant_order_id;
+
+        if ($va->isStatic()) {
+            $merchantOrderId = sprintf('FIXED-%s-%s-%s', $va->student_id, now()->format('ymdHis'), Str::upper(Str::random(4)));
+            $va->update(['merchant_order_id' => $merchantOrderId]);
+        } else {
+            $merchantOrderId = $va->merchant_order_id;
+        }
+
         $amountFormatted = (string) (int) $amount;
 
         $signature = hash_hmac('sha256', $merchantCode.$amountFormatted.$merchantOrderId, $apiKey);

@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Ramsey\Uuid\Uuid;
 use Throwable;
 
@@ -25,7 +26,8 @@ class DuitkuController extends Controller
     ) {}
 
     /**
-     * Ambil VA aktif milik santri yang sedang login, atau buat yang baru.
+     * Ambil VA aktif milik santri yang sedang login.
+     * Mengembalikan Virtual Account resmi Duitku yang terdaftar di Sandbox/Production.
      * Digunakan oleh aplikasi mobile siswa untuk halaman Top Up.
      */
     public function studentVa(Request $request): JsonResponse
@@ -36,50 +38,183 @@ class DuitkuController extends Controller
             throw new AuthorizationException('Akses khusus aplikasi siswa.');
         }
 
-        $amount = (float) $request->input('amount', 10000);
-        $paymentMethod = (string) $request->input('payment_method', '');
+        $validated = $request->validate([
+            'va_type' => ['sometimes', 'string', 'in:fixed,dynamic'],
+            'amount' => ['required_if:va_type,dynamic', 'numeric', 'min:10000'],
+            'payment_method' => ['nullable', 'string', 'max:10'],
+            'force_new' => ['sometimes', 'boolean'],
+        ]);
 
-        $forceNew = $request->boolean('force_new') || $request->boolean('new');
-
-        // Cari VA pending aktif milik santri ini yang belum pernah dibayar
-        $query = VirtualAccount::query()
-            ->where('provider', DuitkuService::PROVIDER)
-            ->where('student_id', $student->id)
-            ->whereNull('paid_at')
-            ->where('status', VirtualAccountStatus::Pending->value)
-            ->where('expires_at', '>', now());
-
-        if ($paymentMethod !== '') {
-            $query->where('payment_code', strtoupper($paymentMethod));
+        $vaType = $validated['va_type'] ?? 'fixed';
+        $paymentMethod = (string) ($validated['payment_method'] ?? '');
+        if ($paymentMethod === '') {
+            $paymentMethod = $this->duitku->defaultPaymentMethod();
         }
+        $paymentMethod = strtoupper($paymentMethod);
 
-        $existing = $forceNew ? null : $query->latest('created_at')->first();
+        if ($vaType === 'fixed') {
+            $virtualAccount = $this->duitku->getOrCreateFixedVirtualAccount($student, $paymentMethod);
 
-        if ($existing !== null) {
             return response()->json([
-                'message' => 'Virtual Account santri aktif.',
-                'virtual_account' => $this->virtualAccountPayload($existing),
+                'message' => 'Virtual account santri aktif.',
+                'virtual_account' => $this->virtualAccountPayload($virtualAccount),
                 'is_new' => false,
             ]);
         }
 
-        // Tidak ada VA aktif — buat VA baru
-        try {
-            $virtualAccount = $this->duitku->createVirtualAccount(
-                student: $student,
-                amount: $amount > 0 ? $amount : 10000,
-                paymentMethod: $paymentMethod !== '' ? $paymentMethod : null,
-                isStatic: true,
-            );
-        } catch (DuitkuException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 422);
+        $amount = (float) round((float) $validated['amount']);
+        $forceNew = $request->boolean('force_new');
+
+        // Cari VA aktif yang terdaftar di Duitku (status pending, belum expired, memiliki nomor VA & referensi)
+        $virtualAccount = null;
+        if (! $forceNew) {
+            $virtualAccount = VirtualAccount::query()
+                ->where('provider', DuitkuService::PROVIDER)
+                ->where('student_id', $student->id)
+                ->where('payment_code', $paymentMethod)
+                ->where('is_static', false)
+                ->where('amount', $amount)
+                ->where('status', VirtualAccountStatus::Pending->value)
+                ->whereNotNull('account_number')
+                ->whereNotNull('provider_reference')
+                ->where('expires_at', '>', now())
+                ->latest('id')
+                ->first();
+        }
+
+        $isNew = false;
+        if ($virtualAccount === null) {
+            try {
+                $virtualAccount = $this->duitku->createVirtualAccount(
+                    student: $student,
+                    amount: $amount,
+                    paymentMethod: $paymentMethod,
+                );
+                $isNew = true;
+            } catch (DuitkuException $exception) {
+                Log::error('Duitku createVirtualAccount failed in studentVa', [
+                    'student_id' => $student->id,
+                    'payment_method' => $paymentMethod,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return response()->json([
+                    'message' => 'Gagal menerbitkan Virtual Account Duitku: '.$exception->getMessage(),
+                ], 422);
+            }
         }
 
         return response()->json([
-            'message' => 'Virtual account santri berhasil dibuat.',
+            'message' => 'Virtual account santri aktif.',
             'virtual_account' => $this->virtualAccountPayload($virtualAccount),
-            'is_new' => true,
-        ], 201);
+            'is_new' => $isNew,
+        ]);
+    }
+
+    public function studentVas(Request $request): JsonResponse
+    {
+        $student = $request->user();
+
+        if (! $student instanceof Student) {
+            throw new AuthorizationException('Akses khusus aplikasi siswa.');
+        }
+
+        $limit = min(max($request->integer('limit', 50), 1), 100);
+        $virtualAccounts = VirtualAccount::query()
+            ->with('student')
+            ->where('student_id', $student->id)
+            ->where('is_static', false)
+            ->latest('created_at')
+            ->limit($limit)
+            ->get();
+
+        return response()->json([
+            'data' => $virtualAccounts->map(
+                fn (VirtualAccount $virtualAccount): array => $this->virtualAccountPayload($virtualAccount),
+            )->values(),
+        ]);
+    }
+
+    /**
+     * Inquiry request dari Duitku Fixed Virtual Account.
+     * Dipanggil oleh Duitku saat nasabah memasukkan nomor VA di ATM/m-banking/simulator.
+     */
+    public function inquiry(Request $request): JsonResponse
+    {
+        $data = $request->all();
+
+        if (! $this->duitku->verifyInquiry($data)) {
+            Log::warning('Duitku inquiry signature verification failed', ['payload' => $data]);
+
+            return response()->json([
+                'vaNo' => (string) ($data['vaNo'] ?? ''),
+                'name' => '',
+                'amount' => 0,
+                'merchantOrderId' => '',
+                'statusCode' => '99',
+                'statusMessage' => 'Invalid signature',
+            ], 200);
+        }
+
+        $vaNo = (string) ($data['vaNo'] ?? ($data['account_number'] ?? ''));
+
+        // Cari record Virtual Account dengan nomor VA yang diinquiry
+        $virtualAccount = VirtualAccount::query()
+            ->where('provider', DuitkuService::PROVIDER)
+            ->where('account_number', $vaNo)
+            ->first();
+
+        // Jika belum ada record VA, coba parse dari nomor VA santri (prefix bank + id)
+        if ($virtualAccount === null) {
+            $virtualAccount = $this->resolveVirtualAccountFromVaNumber($vaNo, (string) ($data['bin'] ?? ''));
+        }
+
+        if ($virtualAccount === null || $virtualAccount->student === null) {
+            Log::warning('Duitku inquiry VA number not found', ['vaNo' => $vaNo]);
+
+            return response()->json([
+                'vaNo' => $vaNo,
+                'name' => '',
+                'amount' => 0,
+                'merchantOrderId' => '',
+                'statusCode' => '01',
+                'statusMessage' => 'NOT FOUND',
+            ], 200);
+        }
+
+        $student = $virtualAccount->student;
+
+        // Generate merchantOrderId unik per sesi pembayaran inquiry
+        $sessionOrderId = sprintf(
+            'FIXED-%s-%s-%s',
+            $student->id,
+            now()->format('ymdHis'),
+            Str::upper(Str::random(4))
+        );
+
+        // Update record dengan session order ID terbaru agar callback langsung mengenali
+        $virtualAccount->update([
+            'merchant_order_id' => $sessionOrderId,
+            'request_payload' => $data,
+        ]);
+
+        // Format nama maks 20 karakter sesuai batas perbankan Duitku
+        $name = Str::limit('SEMESTA '.strtoupper((string) $student->name), 20, '');
+
+        Log::info('Duitku inquiry successful', [
+            'vaNo' => $vaNo,
+            'student_id' => $student->id,
+            'merchantOrderId' => $sessionOrderId,
+        ]);
+
+        return response()->json([
+            'vaNo' => $vaNo,
+            'name' => $name,
+            'amount' => 0, // 0 = Open Amount (pembayar memasukkan nominal bebas di ATM/m-banking)
+            'merchantOrderId' => $sessionOrderId,
+            'statusCode' => '00',
+            'statusMessage' => 'SUCCESS',
+        ], 200);
     }
 
     /**
@@ -142,7 +277,7 @@ class DuitkuController extends Controller
 
         $merchantOrderId = (string) ($data['merchantOrderId'] ?? '');
         $resultCode = (string) ($data['resultCode'] ?? '');
-        $vaNumber = (string) ($data['vaNumber'] ?? '');
+        $vaNumber = (string) ($data['vaNumber'] ?? ($data['vaNo'] ?? ''));
 
         $virtualAccount = VirtualAccount::query()
             ->where('provider', DuitkuService::PROVIDER)
@@ -153,6 +288,25 @@ class DuitkuController extends Controller
                 }
             })
             ->first();
+
+        // Jika tidak ditemukan dan merchantOrderId berpola FIXED-{studentId}-..., cari via student_id
+        if ($virtualAccount === null && Str::startsWith($merchantOrderId, 'FIXED-')) {
+            $parts = explode('-', $merchantOrderId);
+            $studentId = $parts[1] ?? null;
+            if ($studentId) {
+                $virtualAccount = VirtualAccount::query()
+                    ->where('provider', DuitkuService::PROVIDER)
+                    ->where('student_id', $studentId)
+                    ->where('is_static', true)
+                    ->latest('id')
+                    ->first();
+            }
+        }
+
+        // Jika masih null dan vaNumber ada, coba cari lewat format nomor VA
+        if ($virtualAccount === null && $vaNumber !== '') {
+            $virtualAccount = $this->resolveVirtualAccountFromVaNumber($vaNumber);
+        }
 
         if ($virtualAccount === null) {
             Log::warning('Duitku callback received for unknown order', [
@@ -258,6 +412,30 @@ class DuitkuController extends Controller
     }
 
     /**
+     * Cari atau inisialisasi Virtual Account dari nomor VA statis (prefix bank + id/nis santri).
+     */
+    private function resolveVirtualAccountFromVaNumber(string $vaNo, string $bin = ''): ?VirtualAccount
+    {
+        foreach (DuitkuService::BANK_PREFIXES as $code => $prefix) {
+            if (Str::startsWith($vaNo, $prefix) || ($bin !== '' && $bin === $prefix)) {
+                $prefixLen = strlen($prefix);
+                $identifier = ltrim(substr($vaNo, $prefixLen), '0');
+                if (is_numeric($identifier) && (int) $identifier > 0) {
+                    $student = Student::find((int) $identifier)
+                        ?? Student::where('nis', $identifier)->first();
+
+                    if ($student !== null) {
+                        return $this->duitku->getOrCreateFixedVirtualAccount($student, $code);
+                    }
+                }
+                break;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function virtualAccountPayload(VirtualAccount $virtualAccount): array
@@ -282,6 +460,7 @@ class DuitkuController extends Controller
             'is_open_amount' => (bool) $virtualAccount->is_static,
             'payment_url' => $virtualAccount->payment_url,
             'expires_at' => $virtualAccount->expires_at?->toIso8601String(),
+            'created_at' => $virtualAccount->created_at?->toIso8601String(),
         ];
     }
 }

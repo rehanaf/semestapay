@@ -71,6 +71,133 @@ class WalletService
     }
 
     /**
+     * Transfer saldo antar-wallet santri secara atomik.
+     *
+     * @return array{sender: Transaction, recipient: Transaction}
+     */
+    public function transferBetweenStudents(
+        Student $sender,
+        Student $recipient,
+        float $amount,
+        ?string $note = null,
+        ?string $idempotencyKey = null,
+    ): array {
+        if ($sender->is($recipient)) {
+            throw new IdempotencyConflictException('Tidak dapat transfer ke akun sendiri.');
+        }
+
+        if ($amount <= 0) {
+            throw new InsufficientBalanceException('Nominal harus lebih dari 0.');
+        }
+
+        $amount = round($amount, 2);
+        $idempotencyKey ??= (string) Str::uuid();
+
+        return DB::transaction(function () use ($sender, $recipient, $amount, $note, $idempotencyKey): array {
+            $lockedStudents = Student::query()
+                ->whereIn('id', [$sender->id, $recipient->id])
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+            $lockedSender = $lockedStudents->get($sender->id);
+            $lockedRecipient = $lockedStudents->get($recipient->id);
+
+            if ($lockedSender === null || $lockedRecipient === null) {
+                throw new IdempotencyConflictException('Akun transfer tidak ditemukan.');
+            }
+
+            $existingSenderTransfer = Transaction::query()
+                ->where('idempotency_key', $idempotencyKey)
+                ->first();
+
+            if ($existingSenderTransfer !== null) {
+                if (
+                    $existingSenderTransfer->type !== TransactionType::TransferOut->value
+                    || $existingSenderTransfer->student_id !== $lockedSender->id
+                    || (int) $existingSenderTransfer->reference_id !== $lockedRecipient->id
+                    || abs((float) $existingSenderTransfer->amount - $amount) >= 0.01
+                ) {
+                    throw new IdempotencyConflictException('Kunci idempotensi sudah digunakan.');
+                }
+
+                $existingRecipientTransfer = Transaction::query()
+                    ->where('type', TransactionType::TransferIn->value)
+                    ->where('reference_type', 'student_transfer')
+                    ->where('reference_id', $existingSenderTransfer->id)
+                    ->first();
+
+                if ($existingRecipientTransfer === null) {
+                    throw new IdempotencyConflictException('Data transfer tidak lengkap.');
+                }
+
+                return [
+                    'sender' => $existingSenderTransfer,
+                    'recipient' => $existingRecipientTransfer,
+                ];
+            }
+
+            foreach ([$lockedSender, $lockedRecipient] as $student) {
+                if (
+                    $student->status !== 'active'
+                    || $student->wallet_status !== WalletStatus::Active->value
+                ) {
+                    throw new WalletNotActiveException('Wallet siswa tidak aktif.');
+                }
+            }
+
+            if ((float) $lockedSender->balance < $amount) {
+                throw new InsufficientBalanceException('Saldo tidak mencukupi.');
+            }
+
+            $lockedSender->balance = (float) $lockedSender->balance - $amount;
+            $this->persistStudent($lockedSender);
+            $lockedRecipient->balance = (float) $lockedRecipient->balance + $amount;
+            $this->persistStudent($lockedRecipient);
+
+            $senderTransaction = $this->newTransaction(
+                TransactionType::TransferOut,
+                $lockedSender,
+                $amount,
+                $idempotencyKey,
+                [
+                    'reference_type' => 'student_transfer',
+                    'reference_id' => (string) $lockedRecipient->id,
+                    'note' => $note === null ? 'Transfer ke '.$lockedRecipient->name : 'Transfer ke '.$lockedRecipient->name.' • '.$note,
+                ],
+            );
+            $senderTransaction->save();
+
+            $recipientTransaction = $this->newTransaction(
+                TransactionType::TransferIn,
+                $lockedRecipient,
+                $amount,
+                (string) Str::uuid(),
+                [
+                    'reference_type' => 'student_transfer',
+                    'reference_id' => $senderTransaction->id,
+                    'note' => $note === null ? 'Transfer dari '.$lockedSender->name : 'Transfer dari '.$lockedSender->name.' • '.$note,
+                ],
+            );
+            $recipientTransaction->save();
+
+            $this->ledger($senderTransaction, [
+                ['account' => 'wallet', 'direction' => LedgerDirection::Credit, 'with_balance' => true],
+                ['account' => 'student_transfer', 'direction' => LedgerDirection::Debit, 'with_balance' => false],
+            ]);
+            $this->ledger($recipientTransaction, [
+                ['account' => 'student_transfer', 'direction' => LedgerDirection::Credit, 'with_balance' => false],
+                ['account' => 'wallet', 'direction' => LedgerDirection::Debit, 'with_balance' => true],
+            ]);
+
+            return [
+                'sender' => $senderTransaction,
+                'recipient' => $recipientTransaction,
+            ];
+        }, attempts: 3);
+    }
+
+    /**
      * Pembayaran gesek di outlet (debit wallet, cek limit harian per merchant).
      */
     public function pay(

@@ -10,12 +10,15 @@ class StudentState extends ChangeNotifier {
   StudentProfile? _student;
   StudentDashboard? _dashboard;
   List<StudentMutation> _mutations = [];
+  List<VirtualAccountInfo> _virtualAccounts = [];
   bool _loading = false;
 
   String? get token => _token;
   StudentProfile? get student => _student;
   StudentDashboard? get dashboard => _dashboard;
   List<StudentMutation> get mutations => List.unmodifiable(_mutations);
+  List<VirtualAccountInfo> get virtualAccounts =>
+      List.unmodifiable(_virtualAccounts);
   bool get isAuthenticated => _token != null && _student != null;
   bool get isLoading => _loading;
 
@@ -101,14 +104,24 @@ class StudentState extends ChangeNotifier {
       final results = await Future.wait([
         api.getStudentDashboard(),
         api.getStudentMutations(limit: 50),
+        api.getStudentVirtualAccounts(limit: 50),
       ]);
       _dashboard = results[0] as StudentDashboard;
       _student = _dashboard!.student;
       _mutations = results[1] as List<StudentMutation>;
+      _virtualAccounts = results[2] as List<VirtualAccountInfo>;
     } finally {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  void addVirtualAccount(VirtualAccountInfo virtualAccount) {
+    _virtualAccounts = [
+      virtualAccount,
+      ..._virtualAccounts.where((item) => item.id != virtualAccount.id),
+    ];
+    notifyListeners();
   }
 
   void logout() {
@@ -116,6 +129,7 @@ class StudentState extends ChangeNotifier {
     _student = null;
     _dashboard = null;
     _mutations = [];
+    _virtualAccounts = [];
     api.clearToken();
     notifyListeners();
   }

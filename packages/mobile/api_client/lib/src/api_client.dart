@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'api_exception.dart';
 import 'models/auth_response.dart';
@@ -240,6 +241,61 @@ class SemestaPayApiClient {
     return _parseList(response, StudentMutation.fromJson);
   }
 
+  Future<List<StudentTransferRecipient>> searchStudentTransferRecipients({
+    String query = '',
+    int limit = 30,
+  }) async {
+    final url = Uri.parse('$baseUrl/student/transfer/recipients').replace(
+      queryParameters: {
+        'q': query,
+        'limit': '$limit',
+      },
+    );
+    final response = await _client.get(url, headers: _buildHeaders());
+    return _parseList(response, StudentTransferRecipient.fromJson);
+  }
+
+  Future<StudentTransferReceipt> transferToStudent({
+    required int recipientId,
+    required double amount,
+    String? note,
+    String? idempotencyKey,
+  }) async {
+    final url = Uri.parse('$baseUrl/student/transfers');
+    final response = await _client.post(
+      url,
+      headers: _buildHeaders(),
+      body: jsonEncode({
+        'recipient_id': recipientId,
+        'amount': amount,
+        'note': note,
+        'idempotency_key': idempotencyKey ?? _newIdempotencyKey(),
+      }),
+    );
+    final data = _processResponse(response) as Map<String, dynamic>;
+    return StudentTransferReceipt.fromJson(data);
+  }
+
+  String _newIdempotencyKey() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex =
+        bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
+        '${hex.substring(20)}';
+  }
+
+  Future<List<VirtualAccountInfo>> getStudentVirtualAccounts({
+    int limit = 50,
+  }) async {
+    final url = Uri.parse('$baseUrl/student/topup/vas?limit=$limit');
+    final response = await _client.get(url, headers: _buildHeaders());
+    return _parseList(response, VirtualAccountInfo.fromJson);
+  }
+
   Future<List<StudentBill>> getStudentBills() async {
     final url = Uri.parse('$baseUrl/student/bills');
     final response = await _client.get(url, headers: _buildHeaders());
@@ -263,8 +319,7 @@ class SemestaPayApiClient {
     int studentId, {
     int limit = 50,
   }) async {
-    final url =
-        Uri.parse('$baseUrl/wallet/$studentId/mutations?limit=$limit');
+    final url = Uri.parse('$baseUrl/wallet/$studentId/mutations?limit=$limit');
     final response = await _client.get(url, headers: _buildHeaders());
     return _parseList(response, StudentMutation.fromJson);
   }
@@ -497,19 +552,18 @@ class SemestaPayApiClient {
       list = [];
     }
 
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(parser)
-        .toList();
+    return list.whereType<Map<String, dynamic>>().map(parser).toList();
   }
 
   Future<VirtualAccountInfo> getOrCreateTopupVa({
     double amount = 10000,
     String? paymentMethod,
+    String vaType = 'fixed',
     bool forceNew = false,
   }) async {
     final params = <String, String>{
       'amount': amount.toInt().toString(),
+      'va_type': vaType,
     };
     if (paymentMethod != null && paymentMethod.isNotEmpty) {
       params['payment_method'] = paymentMethod;
@@ -517,7 +571,8 @@ class SemestaPayApiClient {
     if (forceNew) {
       params['force_new'] = '1';
     }
-    final url = Uri.parse('$baseUrl/student/topup/va').replace(queryParameters: params);
+    final url =
+        Uri.parse('$baseUrl/student/topup/va').replace(queryParameters: params);
     final response = await _client.get(url, headers: _buildHeaders());
     final data = _processResponse(response) as Map<String, dynamic>;
     return VirtualAccountInfo.fromJson(data);

@@ -132,7 +132,7 @@ class StudentMutation {
   factory StudentMutation.fromJson(Map<String, dynamic> json) {
     final rawId = json['id']?.toString() ?? '';
     final rawType = json['type'] as String? ?? 'payment';
-    final creditTypes = ['topup', 'reversal', 'adjustment'];
+    final creditTypes = ['topup', 'transfer_in', 'reversal', 'adjustment'];
     final direction = json['direction'] as String? ??
         (creditTypes.contains(rawType) ? 'credit' : 'debit');
 
@@ -147,6 +147,72 @@ class StudentMutation {
       outlet: json['outlet'] as String?,
       note: json['note'] as String?,
       createdAt: json['created_at'] as String?,
+    );
+  }
+}
+
+class StudentTransferRecipient {
+  final int id;
+  final String name;
+  final String nis;
+  final String? className;
+
+  const StudentTransferRecipient({
+    required this.id,
+    required this.name,
+    required this.nis,
+    this.className,
+  });
+
+  factory StudentTransferRecipient.fromJson(Map<String, dynamic> json) {
+    return StudentTransferRecipient(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      name: json['name'] as String? ?? '',
+      nis: json['nis'] as String? ?? '',
+      className: json['class'] as String?,
+    );
+  }
+}
+
+class StudentTransferReceipt {
+  final String transactionId;
+  final String recipientTransactionId;
+  final int recipientId;
+  final String recipientName;
+  final String recipientNis;
+  final double amount;
+  final double balanceAfter;
+  final String status;
+  final String? note;
+  final String? createdAt;
+
+  const StudentTransferReceipt({
+    required this.transactionId,
+    required this.recipientTransactionId,
+    required this.recipientId,
+    required this.recipientName,
+    required this.recipientNis,
+    required this.amount,
+    required this.balanceAfter,
+    required this.status,
+    this.note,
+    this.createdAt,
+  });
+
+  factory StudentTransferReceipt.fromJson(Map<String, dynamic> json) {
+    final transfer = json['transfer'] as Map<String, dynamic>? ?? json;
+    return StudentTransferReceipt(
+      transactionId: transfer['transaction_id']?.toString() ?? '',
+      recipientTransactionId:
+          transfer['recipient_transaction_id']?.toString() ?? '',
+      recipientId: (transfer['recipient_id'] as num?)?.toInt() ?? 0,
+      recipientName: transfer['recipient_name'] as String? ?? '',
+      recipientNis: transfer['recipient_nis'] as String? ?? '',
+      amount: (transfer['amount'] as num?)?.toDouble() ?? 0,
+      balanceAfter: (transfer['balance_after'] as num?)?.toDouble() ?? 0,
+      status: transfer['status'] as String? ?? 'posted',
+      note: transfer['note'] as String?,
+      createdAt: transfer['created_at'] as String?,
     );
   }
 }
@@ -211,10 +277,7 @@ class StudentDashboard {
   factory StudentDashboard.fromJson(Map<String, dynamic> json) {
     List<T> parseList<T>(dynamic raw, T Function(Map<String, dynamic>) parser) {
       if (raw is! List) return [];
-      return raw
-          .whereType<Map<String, dynamic>>()
-          .map(parser)
-          .toList();
+      return raw.whereType<Map<String, dynamic>>().map(parser).toList();
     }
 
     return StudentDashboard(

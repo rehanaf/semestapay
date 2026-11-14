@@ -131,6 +131,7 @@ class StudentPortalController extends Controller
     {
         $isCredit = in_array($transaction->type, [
             TransactionType::Topup->value,
+            TransactionType::TransferIn->value,
             TransactionType::Reversal->value,
             TransactionType::Adjustment->value,
             TransactionType::CashOut->value,

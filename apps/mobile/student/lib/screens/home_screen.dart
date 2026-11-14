@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:semestapay_mobile_ui/semestapay_mobile_ui.dart';
 import '../state/student_state.dart';
-import 'topup/topup_screen.dart';
-import 'transfer/bank_transfer_screen.dart';
+import 'topup/topup_flow.dart';
+import 'transfer/student_transfer_list_screen.dart';
 import 'transfer/ewallet_transfer_screen.dart';
-import 'transfer/transfer_screen.dart';
 import 'bills_page.dart';
 import 'history_page.dart';
 import 'notification_screen.dart';
@@ -28,7 +27,11 @@ class _StudentShellState extends State<StudentShell> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const TransferScreen(),
+            builder: (_) => StudentTransferListScreen(
+              api: widget.state.api,
+              balance: widget.state.student?.balance ?? 0,
+              onTransferComplete: widget.state.refresh,
+            ),
           ),
         );
       },
@@ -65,10 +68,7 @@ class _StudentShellState extends State<StudentShell> {
         ),
         content: Text(
           'Apakah Anda yakin ingin keluar dari akun Semestapay?',
-          style: AppTheme.font(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
+          style: AppTheme.font(fontSize: 14, color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -142,7 +142,8 @@ class _StudentShellState extends State<StudentShell> {
                   ),
                 ],
               ),
-              child: widget.state.student?.avatarUrl != null &&
+              child:
+                  widget.state.student?.avatarUrl != null &&
                       widget.state.student!.avatarUrl!.isNotEmpty
                   ? ClipOval(
                       child: Image.network(
@@ -150,15 +151,19 @@ class _StudentShellState extends State<StudentShell> {
                         width: 44,
                         height: 44,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.person_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.person_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                       ),
                     )
-                  : const Icon(Icons.person_rounded,
-                      color: Colors.white, size: 24),
+                  : const Icon(
+                      Icons.person_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
             ),
           ),
           const SizedBox(width: 12),
@@ -200,9 +205,7 @@ class _StudentShellState extends State<StudentShell> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const NotificationScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const NotificationScreen()),
             );
           },
         ),
@@ -213,18 +216,17 @@ class _StudentShellState extends State<StudentShell> {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -316,7 +318,9 @@ class _StudentShellState extends State<StudentShell> {
                         width: 58,
                         height: 58,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20), // SQUIRCLE SHAPE
+                          borderRadius: BorderRadius.circular(
+                            20,
+                          ), // SQUIRCLE SHAPE
                           gradient: const LinearGradient(
                             colors: [Color(0xFF1A56FF), Color(0xFF00C896)],
                             begin: Alignment.topLeft,
@@ -524,7 +528,11 @@ class _HomePageState extends State<_HomePage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => TopUpScreen(api: widget.state.api),
+                                builder: (_) => TopUpScreen(
+                                  api: widget.state.api,
+                                  onVirtualAccountCreated:
+                                      widget.state.addVirtualAccount,
+                                ),
                               ),
                             );
                           },
@@ -535,14 +543,7 @@ class _HomePageState extends State<_HomePage> {
                         child: _BalanceActionButton(
                           icon: Icons.arrow_upward_rounded,
                           label: 'Kirim',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const BankTransferScreen(),
-                              ),
-                            );
-                          },
+                          onTap: () => widget.onGoToTransfer?.call(),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -580,10 +581,26 @@ class _HomePageState extends State<_HomePage> {
       ),
       _ShortcutData(Icons.water_drop_rounded, 'PDAM', const Color(0xFF29B6F6)),
       _ShortcutData(Icons.wifi_rounded, 'Internet', const Color(0xFF66BB6A)),
-      _ShortcutData(Icons.local_gas_station_rounded, 'BBM', const Color(0xFFAB47BC)),
-      _ShortcutData(Icons.credit_card_rounded, 'Kartu', const Color(0xFFEF5350)),
-      _ShortcutData(Icons.receipt_long_rounded, 'Tagihan', const Color(0xFFFF9800)),
-      _ShortcutData(Icons.more_horiz_rounded, 'Lainnya', AppColors.textSecondary),
+      _ShortcutData(
+        Icons.local_gas_station_rounded,
+        'BBM',
+        const Color(0xFFAB47BC),
+      ),
+      _ShortcutData(
+        Icons.credit_card_rounded,
+        'Kartu',
+        const Color(0xFFEF5350),
+      ),
+      _ShortcutData(
+        Icons.receipt_long_rounded,
+        'Tagihan',
+        const Color(0xFFFF9800),
+      ),
+      _ShortcutData(
+        Icons.more_horiz_rounded,
+        'Lainnya',
+        AppColors.textSecondary,
+      ),
     ];
 
     return Padding(
@@ -641,7 +658,10 @@ class _HomePageState extends State<_HomePage> {
                 childAspectRatio: 0.88,
               ),
               itemBuilder: (context, index) {
-                return _ShortcutItem(data: shortcuts[index]);
+                return _ShortcutItem(
+                  data: shortcuts[index],
+                  onTransfer: widget.onGoToTransfer,
+                );
               },
             ),
           ],
@@ -792,21 +812,21 @@ class _HomePageState extends State<_HomePage> {
                   ),
                 )
               : Column(
-            children: List.generate(transactions.length, (i) {
-              return Column(
-                children: [
-                  _TransactionTile(data: transactions[i]),
-                  if (i < transactions.length - 1)
-                    const Divider(
-                      height: 1,
-                      indent: 72,
-                      endIndent: 20,
-                      color: AppColors.divider,
-                    ),
-                ],
-              );
-            }),
-          ),
+                  children: List.generate(transactions.length, (i) {
+                    return Column(
+                      children: [
+                        _TransactionTile(data: transactions[i]),
+                        if (i < transactions.length - 1)
+                          const Divider(
+                            height: 1,
+                            indent: 72,
+                            endIndent: 20,
+                            color: AppColors.divider,
+                          ),
+                      ],
+                    );
+                  }),
+                ),
         ),
       ],
     );
@@ -830,6 +850,8 @@ class _HomePageState extends State<_HomePage> {
       case 'payment':
         return 'Pembayaran Merchant';
       case 'transfer':
+      case 'transfer_in':
+      case 'transfer_out':
         return 'Transfer';
       case 'withdraw':
         return 'Tarik Tunai';
@@ -847,6 +869,8 @@ class _HomePageState extends State<_HomePage> {
       case 'payment':
         return Icons.storefront_rounded;
       case 'transfer':
+      case 'transfer_in':
+      case 'transfer_out':
         return Icons.swap_horiz_rounded;
       case 'withdraw':
         return Icons.atm_rounded;
@@ -860,6 +884,8 @@ class _HomePageState extends State<_HomePage> {
       case 'payment':
         return AppColors.merchantPrimary;
       case 'transfer':
+      case 'transfer_in':
+      case 'transfer_out':
         return const Color(0xFF00C896);
       case 'withdraw':
         return const Color(0xFFFF6B35);
@@ -869,7 +895,6 @@ class _HomePageState extends State<_HomePage> {
   }
 }
 
-
 // ─── REUSABLE WIDGETS ────────────────────────────────────────────────────────
 
 class _AppBarButton extends StatelessWidget {
@@ -877,11 +902,7 @@ class _AppBarButton extends StatelessWidget {
   final int? badge;
   final VoidCallback onTap;
 
-  const _AppBarButton({
-    required this.icon,
-    required this.onTap,
-    this.badge,
-  });
+  const _AppBarButton({required this.icon, required this.onTap, this.badge});
 
   @override
   Widget build(BuildContext context) {
@@ -896,11 +917,7 @@ class _AppBarButton extends StatelessWidget {
             height: 36,
             color: Colors.transparent,
             alignment: Alignment.center,
-            child: Icon(
-              icon,
-              color: AppColors.textPrimary,
-              size: 24,
-            ),
+            child: Icon(icon, color: AppColors.textPrimary, size: 24),
           ),
           if (badge != null)
             Positioned(
@@ -958,11 +975,7 @@ class _BalanceActionButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 17,
-            ),
+            Icon(icon, color: Colors.white, size: 17),
             const SizedBox(width: 6),
             Text(
               label,
@@ -986,31 +999,30 @@ class _ShortcutData {
   final String label;
   final Color color;
   final _ShortcutType type;
-  _ShortcutData(this.icon, this.label, this.color, {this.type = _ShortcutType.general});
+  _ShortcutData(
+    this.icon,
+    this.label,
+    this.color, {
+    this.type = _ShortcutType.general,
+  });
 }
 
 class _ShortcutItem extends StatelessWidget {
   final _ShortcutData data;
+  final VoidCallback? onTransfer;
 
-  const _ShortcutItem({required this.data});
+  const _ShortcutItem({required this.data, this.onTransfer});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
         if (data.type == _ShortcutType.bankTransfer) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const BankTransferScreen(),
-            ),
-          );
+          onTransfer?.call();
         } else if (data.type == _ShortcutType.ewallet) {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const EWalletTransferScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const EWalletTransferScreen()),
           );
         } else {
           AppToast.show(
@@ -1123,7 +1135,10 @@ class _PromoVerticalCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: data.color.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
@@ -1240,7 +1255,9 @@ class _TransactionTile extends StatelessWidget {
                 style: AppTheme.font(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: data.isCredit ? AppColors.accent : AppColors.textPrimary,
+                  color: data.isCredit
+                      ? AppColors.accent
+                      : AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -1450,7 +1467,12 @@ class _QrisScannerSheetState extends State<_QrisScannerSheet>
                   _buildCorner(top: 0, left: 0, isTop: true, isLeft: true),
                   _buildCorner(top: 0, right: 0, isTop: true, isLeft: false),
                   _buildCorner(bottom: 0, left: 0, isTop: false, isLeft: true),
-                  _buildCorner(bottom: 0, right: 0, isTop: false, isLeft: false),
+                  _buildCorner(
+                    bottom: 0,
+                    right: 0,
+                    isTop: false,
+                    isLeft: false,
+                  ),
                   Container(
                     margin: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -1498,7 +1520,9 @@ class _QrisScannerSheetState extends State<_QrisScannerSheet>
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _ScannerAction(
-                  icon: _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                  icon: _isFlashOn
+                      ? Icons.flash_on_rounded
+                      : Icons.flash_off_rounded,
                   label: 'Flashlight',
                   isActive: _isFlashOn,
                   onTap: () => setState(() => _isFlashOn = !_isFlashOn),
@@ -1554,9 +1578,15 @@ class _QrisScannerSheetState extends State<_QrisScannerSheet>
           ),
           borderRadius: BorderRadius.only(
             topLeft: isTop && isLeft ? const Radius.circular(20) : Radius.zero,
-            topRight: isTop && !isLeft ? const Radius.circular(20) : Radius.zero,
-            bottomLeft: !isTop && isLeft ? const Radius.circular(20) : Radius.zero,
-            bottomRight: !isTop && !isLeft ? const Radius.circular(20) : Radius.zero,
+            topRight: isTop && !isLeft
+                ? const Radius.circular(20)
+                : Radius.zero,
+            bottomLeft: !isTop && isLeft
+                ? const Radius.circular(20)
+                : Radius.zero,
+            bottomRight: !isTop && !isLeft
+                ? const Radius.circular(20)
+                : Radius.zero,
           ),
         ),
       ),
@@ -1593,11 +1623,7 @@ class _ScannerAction extends StatelessWidget {
                   : Colors.white.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 22,
-            ),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
           const SizedBox(height: 8),
           Text(

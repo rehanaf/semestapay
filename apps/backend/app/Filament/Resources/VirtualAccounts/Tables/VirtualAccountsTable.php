@@ -129,7 +129,14 @@ class VirtualAccountsTable
                         $amount = (string) (int) $data['amount'];
                         $merchantCode = $duitku->merchantCode();
                         $apiKey = $duitku->apiKey();
-                        $orderId = $record->merchant_order_id;
+
+                        if ($record->isStatic()) {
+                            $orderId = sprintf('FIXED-%s-%s-%s', $record->student_id, now()->format('ymdHis'), Str::upper(Str::random(4)));
+                            $record->update(['merchant_order_id' => $orderId]);
+                        } else {
+                            $orderId = $record->merchant_order_id;
+                        }
+
                         $sig = hash_hmac('sha256', $merchantCode.$amount.$orderId, $apiKey);
                         $ref = 'SIMULASI-UI-'.Str::upper(Str::random(8));
 

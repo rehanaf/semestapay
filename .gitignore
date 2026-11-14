@@ -41,3 +41,7 @@ apps/mobile/**/.metadata
 packages/mobile/**/.dart_tool/
 packages/mobile/**/.packages
 packages/mobile/**/build/
+
+# APK binaries
+landing/apk/*.apk
+landing/apk/**/*.apk

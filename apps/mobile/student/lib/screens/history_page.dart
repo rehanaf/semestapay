@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:semestapay_api_client/semestapay_api_client.dart';
 import 'package:semestapay_mobile_ui/semestapay_mobile_ui.dart';
 import '../state/student_state.dart';
+import 'topup/topup_virtual_account_screen.dart';
 
 /// Model transaksi riwayat
 class HistoryItem {
@@ -15,6 +17,7 @@ class HistoryItem {
   final String? note;
   final String sourceOrTarget;
   final String typeLabel; // e.g., 'Transfer', 'Merchant', 'Tagihan', 'Top Up'
+  final VirtualAccountInfo? virtualAccount;
 
   const HistoryItem({
     required this.id,
@@ -27,9 +30,10 @@ class HistoryItem {
     this.note,
     required this.sourceOrTarget,
     required this.typeLabel,
+    this.virtualAccount,
   });
 
-  bool get isIncome => amount > 0;
+  bool get isIncome => virtualAccount == null && amount > 0;
 }
 
 class HistoryPage extends StatefulWidget {
@@ -53,10 +57,11 @@ class _HistoryPageState extends State<HistoryPage> {
     'Kantin / Merchant',
     'Transfer',
     'Tagihan',
+    'Virtual Account',
   ];
 
   List<HistoryItem> get _allTransactions {
-    return widget.state.mutations.map((m) {
+    final transactions = widget.state.mutations.map((m) {
       final isCredit = m.isCredit;
       final typeLabel = _typeLabel(m.type);
       return HistoryItem(
@@ -68,8 +73,8 @@ class _HistoryPageState extends State<HistoryPage> {
             ? m.outlet!
             : (m.note?.isNotEmpty == true ? m.note! : typeLabel),
         amount: (isCredit ? m.amount : -m.amount).round(),
-        dateTime: DateTime.tryParse(m.createdAt ?? '')?.toLocal() ??
-            DateTime.now(),
+        dateTime:
+            DateTime.tryParse(m.createdAt ?? '')?.toLocal() ?? DateTime.now(),
         icon: _iconFor(m.type),
         iconColor: isCredit ? AppColors.accent : _colorFor(m.type),
         note: m.note,
@@ -77,6 +82,26 @@ class _HistoryPageState extends State<HistoryPage> {
         typeLabel: typeLabel,
       );
     }).toList();
+    transactions.addAll(
+      widget.state.virtualAccounts.map((virtualAccount) {
+        return HistoryItem(
+          id: virtualAccount.merchantOrderId,
+          title: 'Top Up via ${virtualAccount.bankName}',
+          category: 'Virtual Account',
+          amount: virtualAccount.amount.round(),
+          dateTime:
+              DateTime.tryParse(virtualAccount.createdAt ?? '')?.toLocal() ??
+              DateTime.now(),
+          icon: Icons.account_balance_rounded,
+          iconColor: AppColors.primary,
+          note: virtualAccount.merchantOrderId,
+          sourceOrTarget: virtualAccount.bankName,
+          typeLabel: 'Virtual Account',
+          virtualAccount: virtualAccount,
+        );
+      }),
+    );
+    return transactions;
   }
 
   String _typeLabel(String type) {
@@ -86,6 +111,8 @@ class _HistoryPageState extends State<HistoryPage> {
       case 'payment':
         return 'Kantin / Merchant';
       case 'transfer':
+      case 'transfer_in':
+      case 'transfer_out':
         return 'Transfer';
       case 'withdraw':
         return 'Tarik Tunai';
@@ -101,6 +128,8 @@ class _HistoryPageState extends State<HistoryPage> {
       case 'payment':
         return Icons.storefront_rounded;
       case 'transfer':
+      case 'transfer_in':
+      case 'transfer_out':
         return Icons.swap_horiz_rounded;
       case 'withdraw':
         return Icons.atm_rounded;
@@ -114,6 +143,8 @@ class _HistoryPageState extends State<HistoryPage> {
       case 'payment':
         return AppColors.merchantPrimary;
       case 'transfer':
+      case 'transfer_in':
+      case 'transfer_out':
         return const Color(0xFF00C896);
       case 'withdraw':
         return const Color(0xFFFF6B35);
@@ -133,11 +164,30 @@ class _HistoryPageState extends State<HistoryPage> {
 
     return _allTransactions.where((item) {
       // Filter kategori
-      if (_selectedFilter == 'Uang Masuk' && !item.isIncome) return false;
-      if (_selectedFilter == 'Uang Keluar' && item.isIncome) return false;
-      if (_selectedFilter == 'Kantin / Merchant' && item.typeLabel != 'Kantin / Merchant') return false;
-      if (_selectedFilter == 'Transfer' && item.typeLabel != 'Transfer') return false;
-      if (_selectedFilter == 'Tagihan' && item.typeLabel != 'Tagihan') return false;
+      if (_selectedFilter == 'Virtual Account' && item.virtualAccount == null) {
+        return false;
+      }
+      if (_selectedFilter != 'Semua' &&
+          _selectedFilter != 'Virtual Account' &&
+          item.virtualAccount != null) {
+        return false;
+      }
+      if (_selectedFilter == 'Uang Masuk' && !item.isIncome) {
+        return false;
+      }
+      if (_selectedFilter == 'Uang Keluar' && item.isIncome) {
+        return false;
+      }
+      if (_selectedFilter == 'Kantin / Merchant' &&
+          item.typeLabel != 'Kantin / Merchant') {
+        return false;
+      }
+      if (_selectedFilter == 'Transfer' && item.typeLabel != 'Transfer') {
+        return false;
+      }
+      if (_selectedFilter == 'Tagihan' && item.typeLabel != 'Tagihan') {
+        return false;
+      }
 
       // Filter query pencarian
       if (query.isNotEmpty) {
@@ -154,11 +204,15 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // Hitung total masuk & keluar untuk bulan ini
   int get _totalIncome {
-    return _allTransactions.where((e) => e.isIncome).fold<int>(0, (sum, e) => sum + e.amount);
+    return _allTransactions
+        .where((e) => e.virtualAccount == null && e.isIncome)
+        .fold<int>(0, (sum, e) => sum + e.amount);
   }
 
   int get _totalExpense {
-    return _allTransactions.where((e) => !e.isIncome).fold<int>(0, (sum, e) => sum + e.amount.abs());
+    return _allTransactions
+        .where((e) => e.virtualAccount == null && !e.isIncome)
+        .fold<int>(0, (sum, e) => sum + e.amount.abs());
   }
 
   String _formatCurrency(int amount) {
@@ -172,6 +226,17 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   void _openDetailModal(HistoryItem item) {
+    final virtualAccount = item.virtualAccount;
+    if (virtualAccount != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              VirtualAccountDetailScreen(virtualAccount: virtualAccount),
+        ),
+      );
+      return;
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -182,70 +247,90 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filteredTransactions;
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        leading: widget.onBackToHome != null
-            ? IconButton(
-                icon: const Icon(Icons.chevron_left_rounded, size: 28, color: AppColors.textPrimary),
-                onPressed: widget.onBackToHome,
-              )
-            : null,
-        title: Text(
-          'Riwayat Transaksi',
-          style: AppTheme.font(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download_rounded, color: AppColors.textPrimary, size: 22),
-            tooltip: 'Unduh Rekening Koran',
-            onPressed: () {
-              AppToast.show(
-                context,
-                'Laporan riwayat transaksi berhasil diunduh (PDF)',
-                type: ToastType.success,
-              );
-            },
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Area Filter & Search tetap di atas
-            _buildTopControlBar(),
-
-            // List Transaksi
-            Expanded(
-              child: filtered.isEmpty
-                  ? _buildEmptyState()
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                      physics: const BouncingScrollPhysics(),
-                      children: [
-                        // Card Ringkasan Masuk/Keluar
-                        _buildMonthlySummaryCard(),
-                        const SizedBox(height: 16),
-
-                        // List Transaksi
-                        _buildGroupedList(filtered),
-                      ],
+    return ListenableBuilder(
+      listenable: widget.state,
+      builder: (context, _) {
+        final filtered = _filteredTransactions;
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            backgroundColor: AppColors.surface,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            centerTitle: true,
+            leading: widget.onBackToHome != null
+                ? IconButton(
+                    icon: const Icon(
+                      Icons.chevron_left_rounded,
+                      size: 28,
+                      color: AppColors.textPrimary,
                     ),
+                    onPressed: widget.onBackToHome,
+                  )
+                : null,
+            title: Text(
+              'Riwayat Transaksi',
+              style: AppTheme.font(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ],
-        ),
-      ),
+            actions: [
+              IconButton(
+                icon: const Icon(
+                  Icons.download_rounded,
+                  color: AppColors.textPrimary,
+                  size: 22,
+                ),
+                tooltip: 'Unduh Rekening Koran',
+                onPressed: () {
+                  AppToast.show(
+                    context,
+                    'Laporan riwayat transaksi berhasil diunduh (PDF)',
+                    type: ToastType.success,
+                  );
+                },
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Area Filter & Search tetap di atas
+                _buildTopControlBar(),
+
+                // List Transaksi
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: widget.state.refresh,
+                    child: filtered.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(
+                                height: MediaQuery.sizeOf(context).height * 0.6,
+                                child: _buildEmptyState(),
+                              ),
+                            ],
+                          )
+                        : ListView(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                            physics: const BouncingScrollPhysics(),
+                            children: [
+                              _buildMonthlySummaryCard(),
+                              const SizedBox(height: 16),
+                              _buildGroupedList(filtered),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -271,19 +356,33 @@ class _HistoryPageState extends State<HistoryPage> {
               style: AppTheme.font(fontSize: 13, color: AppColors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Cari nama merchant, transfer, atau catatan...',
-                hintStyle: AppTheme.font(fontSize: 13, color: AppColors.textLight),
-                prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
+                hintStyle: AppTheme.font(
+                  fontSize: 13,
+                  color: AppColors.textLight,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? GestureDetector(
                         onTap: () {
                           _searchController.clear();
                           setState(() {});
                         },
-                        child: const Icon(Icons.close_rounded, size: 18, color: AppColors.textSecondary),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
                       )
                     : null,
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 11,
+                ),
               ),
             ),
           ),
@@ -303,12 +402,17 @@ class _HistoryPageState extends State<HistoryPage> {
                 return GestureDetector(
                   onTap: () => setState(() => _selectedFilter = filter),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected ? AppColors.primary : AppColors.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : AppColors.divider,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.divider,
                       ),
                     ),
                     child: Center(
@@ -316,8 +420,12 @@ class _HistoryPageState extends State<HistoryPage> {
                         filter,
                         style: AppTheme.font(
                           fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -355,7 +463,11 @@ class _HistoryPageState extends State<HistoryPage> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.calendar_today_rounded,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'Ringkasan November 2026',
@@ -400,7 +512,11 @@ class _HistoryPageState extends State<HistoryPage> {
                         color: Color(0xFFE6F7F0),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_downward_rounded, color: AppColors.accent, size: 20),
+                      child: const Icon(
+                        Icons.arrow_downward_rounded,
+                        color: AppColors.accent,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -446,7 +562,11 @@ class _HistoryPageState extends State<HistoryPage> {
                         color: AppColors.error.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_upward_rounded, color: AppColors.error, size: 20),
+                      child: const Icon(
+                        Icons.arrow_upward_rounded,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -519,10 +639,31 @@ class _HistoryPageState extends State<HistoryPage> {
 
   Widget _buildTransactionTile(HistoryItem item) {
     final isIncome = item.isIncome;
-    final prefix = isIncome ? '+Rp ' : '-Rp ';
+    final virtualAccount = item.virtualAccount;
+    final prefix = virtualAccount != null
+        ? 'Rp '
+        : isIncome
+        ? '+Rp '
+        : '-Rp ';
     final nominalStr = '$prefix${_formatCurrency(item.amount)}';
+    final statusLabel = virtualAccount == null
+        ? 'Berhasil'
+        : switch (virtualAccount.status) {
+            'paid' => 'Dibayar',
+            'expired' => 'Kedaluwarsa',
+            'failed' => 'Gagal',
+            _ => 'Menunggu',
+          };
+    final statusColor = virtualAccount == null
+        ? AppColors.accent
+        : switch (virtualAccount.status) {
+            'paid' => AppColors.success,
+            'expired' || 'failed' => AppColors.error,
+            _ => AppColors.warning,
+          };
 
-    final timeStr = '${_pad(item.dateTime.hour)}:${_pad(item.dateTime.minute)} WIB';
+    final timeStr =
+        '${_pad(item.dateTime.hour)}:${_pad(item.dateTime.minute)} WIB';
     final dateStr = '${item.dateTime.day} ${_monthName(item.dateTime.month)}';
 
     return InkWell(
@@ -592,22 +733,29 @@ class _HistoryPageState extends State<HistoryPage> {
                   style: AppTheme.font(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isIncome ? AppColors.accent : AppColors.textPrimary,
+                    color: virtualAccount != null
+                        ? AppColors.textPrimary
+                        : isIncome
+                        ? AppColors.accent
+                        : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE6F7F0),
+                    color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    'Berhasil',
+                    statusLabel,
                     style: AppTheme.font(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.accent,
+                      color: statusColor,
                     ),
                   ),
                 ),
@@ -642,7 +790,11 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                 ],
               ),
-              child: const Icon(Icons.receipt_long_rounded, color: AppColors.textLight, size: 36),
+              child: const Icon(
+                Icons.receipt_long_rounded,
+                color: AppColors.textLight,
+                size: 36,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -672,7 +824,21 @@ class _HistoryPageState extends State<HistoryPage> {
   String _pad(int v) => v.toString().padLeft(2, '0');
 
   String _monthName(int m) {
-    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
     return months[m];
   }
 }
@@ -704,17 +870,27 @@ class _HistoryDetailSheetState extends State<_HistoryDetailSheet> {
   String _pad(int v) => v.toString().padLeft(2, '0');
 
   String _monthName(int m) {
-    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
     return months[m];
   }
 
   void _copyTrxId() {
     Clipboard.setData(ClipboardData(text: widget.item.id));
-    AppToast.show(
-      context,
-      'ID Transaksi disalin',
-      type: ToastType.info,
-    );
+    AppToast.show(context, 'ID Transaksi disalin', type: ToastType.info);
   }
 
   @override
@@ -725,14 +901,20 @@ class _HistoryDetailSheetState extends State<_HistoryDetailSheet> {
     final amountStr = '$prefix${_formatCurrency(item.amount)}';
 
     final d = item.dateTime;
-    final timeStr = '${d.day} ${_monthName(d.month)} ${d.year}, ${_pad(d.hour)}:${_pad(d.minute)} WIB';
+    final timeStr =
+        '${d.day} ${_monthName(d.month)} ${d.year}, ${_pad(d.hour)}:${_pad(d.minute)} WIB';
 
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        MediaQuery.of(context).padding.bottom + 20,
+      ),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -792,7 +974,11 @@ class _HistoryDetailSheetState extends State<_HistoryDetailSheet> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.copy_rounded, size: 12, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.copy_rounded,
+                    size: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
             ),
@@ -855,7 +1041,10 @@ class _HistoryDetailSheetState extends State<_HistoryDetailSheet> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE6F7F0),
                       borderRadius: BorderRadius.circular(6),
@@ -885,10 +1074,14 @@ class _HistoryDetailSheetState extends State<_HistoryDetailSheet> {
               child: Column(
                 children: [
                   GestureDetector(
-                    onTap: () => setState(() => _accordionOpen = !_accordionOpen),
+                    onTap: () =>
+                        setState(() => _accordionOpen = !_accordionOpen),
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       child: Row(
                         children: [
                           Container(
@@ -928,7 +1121,9 @@ class _HistoryDetailSheetState extends State<_HistoryDetailSheet> {
                   ),
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 200),
-                    crossFadeState: _accordionOpen ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+                    crossFadeState: _accordionOpen
+                        ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
                     firstChild: Padding(
                       padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
                       child: Column(
@@ -941,7 +1136,11 @@ class _HistoryDetailSheetState extends State<_HistoryDetailSheet> {
                           _detailRow('Jenis Transaksi', item.typeLabel),
                           if (item.note != null && item.note!.isNotEmpty)
                             _detailRow('Catatan', item.note!),
-                          _detailRow('Biaya Admin', 'Gratis (Rp 0)', color: AppColors.accent),
+                          _detailRow(
+                            'Biaya Admin',
+                            'Gratis (Rp 0)',
+                            color: AppColors.accent,
+                          ),
                           const SizedBox(height: 8),
                           const Divider(height: 1, color: AppColors.divider),
                           const SizedBox(height: 10),
@@ -984,13 +1183,23 @@ class _HistoryDetailSheetState extends State<_HistoryDetailSheet> {
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.divider),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    icon: const Icon(Icons.share_outlined, size: 16, color: AppColors.textPrimary),
+                    icon: const Icon(
+                      Icons.share_outlined,
+                      size: 16,
+                      color: AppColors.textPrimary,
+                    ),
                     label: Text(
                       'Bagikan',
-                      style: AppTheme.font(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                      style: AppTheme.font(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     onPressed: () {
                       AppToast.show(
@@ -1006,14 +1215,20 @@ class _HistoryDetailSheetState extends State<_HistoryDetailSheet> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       elevation: 0,
                     ),
                     onPressed: () => Navigator.pop(context),
                     child: Text(
                       'Tutup',
-                      style: AppTheme.font(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                      style: AppTheme.font(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),

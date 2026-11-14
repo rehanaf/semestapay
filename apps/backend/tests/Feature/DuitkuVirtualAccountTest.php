@@ -216,59 +216,170 @@ class DuitkuVirtualAccountTest extends TestCase
         $this->assertDatabaseCount('transactions', 1);
     }
 
-    public function test_student_topup_va_returns_unpaid_and_generates_new_after_paid(): void
+    public function test_student_topup_va_returns_permanent_fixed_va(): void
     {
-        Http::fake([
-            'sandbox.duitku.com/*' => Http::response([
-                'reference' => 'D0001REFNEW',
-                'paymentUrl' => 'https://sandbox.duitku.com/payment/D0001REFNEW',
-                'vaNumber' => '7007014009999999',
-                'amount' => '10000',
-                'statusCode' => '00',
-                'statusMessage' => 'SUCCESS',
-            ]),
-        ]);
-
-        $student = Student::factory()->create(['balance' => 0]);
-        // VA lama yang sudah dibayar
-        $oldVa = $this->makeVirtualAccount($student, 50000, isStatic: true);
-        $oldVa->update(['paid_at' => now()]);
+        $student = Student::factory()->create(['balance' => 0, 'nis' => '12345678']);
 
         $response = $this->actingAs($student, 'sanctum')->getJson('/api/v1/student/topup/va?payment_method=BC');
 
-        $response->assertCreated()
-            ->assertJsonPath('is_new', true)
-            ->assertJsonPath('virtual_account.account_number', '7007014009999999');
+        $response->assertOk()
+            ->assertJsonPath('virtual_account.bank_name', 'BCA Virtual Account')
+            ->assertJsonPath('virtual_account.is_static', true)
+            ->assertJsonPath('virtual_account.is_open_amount', true);
 
-        // Panggilan kedua saat VA baru masih belum dibayar akan mengembalikan VA yang sama
+        $vaNumber = $response->json('virtual_account.account_number');
+        $this->assertNotEmpty($vaNumber);
+        $this->assertStringStartsWith('70070', $vaNumber);
+
+        // Panggilan kedua tetap mengembalikan nomor VA yang persis sama
         $response2 = $this->actingAs($student, 'sanctum')->getJson('/api/v1/student/topup/va?payment_method=BC');
-
         $response2->assertOk()
-            ->assertJsonPath('is_new', false)
-            ->assertJsonPath('virtual_account.account_number', '7007014009999999');
+            ->assertJsonPath('virtual_account.account_number', $vaNumber);
     }
 
-    public function test_student_topup_va_generates_new_when_force_new_requested(): void
+    public function test_student_can_create_amount_bound_dynamic_va(): void
     {
+        Http::preventStrayRequests();
         Http::fake([
-            'sandbox.duitku.com/*' => Http::response([
-                'reference' => 'D0001REFFORCE',
-                'paymentUrl' => 'https://sandbox.duitku.com/payment/D0001REFFORCE',
-                'vaNumber' => '7007014008888888',
-                'amount' => '10000',
+            'sandbox.duitku.com/webapi/api/merchant/v2/inquiry' => Http::response([
+                'reference' => 'D0001DYNAMIC123',
+                'paymentUrl' => 'https://sandbox.duitku.com/payment/D0001DYNAMIC123',
+                'vaNumber' => '7007014001555566',
+                'amount' => '25000',
                 'statusCode' => '00',
                 'statusMessage' => 'SUCCESS',
             ]),
         ]);
 
         $student = Student::factory()->create(['balance' => 0]);
-        $unpaidVa = $this->makeVirtualAccount($student, 10000, isStatic: true);
+        $response = $this->actingAs($student, 'sanctum')->getJson(
+            '/api/v1/student/topup/va?va_type=dynamic&amount=25000&payment_method=BC',
+        );
 
-        $response = $this->actingAs($student, 'sanctum')->getJson('/api/v1/student/topup/va?payment_method=BC&force_new=1');
+        $response->assertOk()
+            ->assertJsonPath('virtual_account.amount', 25000)
+            ->assertJsonPath('virtual_account.is_static', false)
+            ->assertJsonPath('virtual_account.is_open_amount', false)
+            ->assertJsonPath('virtual_account.status', VirtualAccountStatus::Pending->value);
 
-        $response->assertCreated()
-            ->assertJsonPath('is_new', true)
-            ->assertJsonPath('virtual_account.account_number', '7007014008888888');
+        $this->assertDatabaseHas('virtual_accounts', [
+            'student_id' => $student->id,
+            'payment_code' => 'BC',
+            'account_number' => '7007014001555566',
+            'amount' => 25000,
+            'is_static' => false,
+        ]);
+
+        Http::assertSent(fn (Request $request): bool => $request->url() === DuitkuService::SANDBOX_BASE_URL.'/v2/inquiry'
+            && $request['paymentAmount'] === 25000
+            && $request['paymentMethod'] === 'BC');
+    }
+
+    public function test_dynamic_va_requires_a_valid_amount(): void
+    {
+        Http::preventStrayRequests();
+        $student = Student::factory()->create(['balance' => 0]);
+
+        $this->actingAs($student, 'sanctum')
+            ->getJson('/api/v1/student/topup/va?va_type=dynamic&payment_method=BC')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('amount');
+
+        $this->assertDatabaseCount('virtual_accounts', 0);
+    }
+
+    public function test_inquiry_returns_student_info_with_open_amount(): void
+    {
+        $student = Student::factory()->create(['name' => 'Ahmad Santri', 'balance' => 0]);
+        $fixedVa = app(DuitkuService::class)->getOrCreateFixedVirtualAccount($student, 'BC');
+
+        $session = 'session-guid-1234';
+        $signature = md5(self::MERCHANT_CODE.'inquiry'.$fixedVa->account_number.$session.self::API_KEY);
+
+        $response = $this->post('/api/v1/payments/duitku/inquiry', [
+            'action' => 'inquiry',
+            'merchantCode' => self::MERCHANT_CODE,
+            'bin' => '70070',
+            'vaNo' => $fixedVa->account_number,
+            'session' => $session,
+            'signature' => $signature,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('statusCode', '00')
+            ->assertJsonPath('statusMessage', 'SUCCESS')
+            ->assertJsonPath('vaNo', $fixedVa->account_number)
+            ->assertJsonPath('name', 'SEMESTA AHMAD SANTRI')
+            ->assertJsonPath('amount', 0);
+
+        $merchantOrderId = $response->json('merchantOrderId');
+        $this->assertNotEmpty($merchantOrderId);
+        $this->assertStringStartsWith('FIXED-'.$student->id.'-', $merchantOrderId);
+    }
+
+    public function test_inquiry_rejects_invalid_signature(): void
+    {
+        $student = Student::factory()->create(['name' => 'Ahmad Santri', 'balance' => 0]);
+        $fixedVa = app(DuitkuService::class)->getOrCreateFixedVirtualAccount($student, 'BC');
+
+        $response = $this->post('/api/v1/payments/duitku/inquiry', [
+            'action' => 'inquiry',
+            'merchantCode' => self::MERCHANT_CODE,
+            'bin' => '70070',
+            'vaNo' => $fixedVa->account_number,
+            'session' => 'session-guid-1234',
+            'signature' => 'invalidsignature123',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('statusCode', '99')
+            ->assertJsonPath('statusMessage', 'Invalid signature');
+    }
+
+    public function test_inquiry_returns_not_found_for_unknown_va(): void
+    {
+        $session = 'session-guid-unknown';
+        $unknownVa = '7007099999999999';
+        $signature = md5(self::MERCHANT_CODE.'inquiry'.$unknownVa.$session.self::API_KEY);
+
+        $response = $this->post('/api/v1/payments/duitku/inquiry', [
+            'action' => 'inquiry',
+            'merchantCode' => self::MERCHANT_CODE,
+            'bin' => '70070',
+            'vaNo' => $unknownVa,
+            'session' => $session,
+            'signature' => $signature,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('statusCode', '01')
+            ->assertJsonPath('statusMessage', 'NOT FOUND');
+    }
+
+    public function test_callback_supports_md5_signature_for_fixed_va(): void
+    {
+        $student = Student::factory()->create(['balance' => 10000]);
+        $virtualAccount = app(DuitkuService::class)->getOrCreateFixedVirtualAccount($student, 'BC');
+
+        $amount = 150000;
+        $orderId = $virtualAccount->merchant_order_id;
+        $signatureMd5 = md5(self::MERCHANT_CODE.$amount.$orderId.self::API_KEY);
+
+        $payload = [
+            'merchantCode' => self::MERCHANT_CODE,
+            'amount' => (string) $amount,
+            'merchantOrderId' => $orderId,
+            'resultCode' => '00',
+            'reference' => 'D0001REFFIXEDMD5',
+            'vaNumber' => $virtualAccount->account_number,
+            'signature' => $signatureMd5,
+        ];
+
+        $this->post('/api/v1/payments/duitku/callback', $payload)->assertOk();
+
+        $this->assertSame(160000.0, (float) $student->fresh()->balance);
+        $this->assertSame(VirtualAccountStatus::Pending->value, $virtualAccount->fresh()->status);
+        $this->assertDatabaseCount('transactions', 1);
     }
 
     private function makeVirtualAccount(Student $student, int $amount, bool $isStatic = false): VirtualAccount

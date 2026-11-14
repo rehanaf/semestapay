@@ -7,6 +7,8 @@ class TransferSuccessScreen extends StatefulWidget {
   final RecipientData recipient;
   final String amount;
   final String note;
+  final String? transactionId;
+  final String? transactionAt;
   final VoidCallback? onBackToHome;
 
   const TransferSuccessScreen({
@@ -14,6 +16,8 @@ class TransferSuccessScreen extends StatefulWidget {
     required this.recipient,
     required this.amount,
     required this.note,
+    this.transactionId,
+    this.transactionAt,
     this.onBackToHome,
   });
 
@@ -37,9 +41,15 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen>
     super.initState();
 
     final now = DateTime.now();
-    _trxId = 'TRX-${now.millisecondsSinceEpoch.toString().substring(4)}';
+    _trxId =
+        widget.transactionId ??
+        'TRX-${now.millisecondsSinceEpoch.toString().substring(4)}';
+    final transactionDate = DateTime.tryParse(
+      widget.transactionAt ?? '',
+    )?.toLocal();
+    final displayDate = transactionDate ?? now;
     _trxTime =
-        '${_pad(now.day)} ${_monthName(now.month)} ${now.year}, ${_pad(now.hour)}:${_pad(now.minute)} WIB';
+        '${_pad(displayDate.day)} ${_monthName(displayDate.month)} ${displayDate.year}, ${_pad(displayDate.hour)}:${_pad(displayDate.minute)} WIB';
 
     _checkController = AnimationController(
       vsync: this,
@@ -47,7 +57,9 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen>
     )..forward();
 
     _checkScale = CurvedAnimation(
-        parent: _checkController, curve: Curves.elasticOut);
+      parent: _checkController,
+      curve: Curves.elasticOut,
+    );
     _contentFade = CurvedAnimation(
       parent: _checkController,
       curve: const Interval(0.35, 1.0, curve: Curves.easeOut),
@@ -64,8 +76,19 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen>
 
   String _monthName(int m) {
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des',
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
     return months[m];
   }
@@ -101,8 +124,11 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen>
         scrolledUnderElevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              size: 28, color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            size: 28,
+            color: AppColors.textPrimary,
+          ),
           onPressed: _handleDone,
         ),
         title: Text(
@@ -330,8 +356,7 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen>
             onTap: () => setState(() => _detailExpanded = !_detailExpanded),
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
                   Container(
@@ -398,8 +423,11 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen>
                     _row('Catatan', widget.note),
                   ],
                   _divRow(),
-                  _row('Biaya Admin', 'Gratis (Rp 0)',
-                      valueColor: AppColors.accent),
+                  _row(
+                    'Biaya Admin',
+                    'Gratis (Rp 0)',
+                    valueColor: AppColors.accent,
+                  ),
                   const SizedBox(height: 12),
                   const Divider(color: AppColors.divider, height: 1),
                   const SizedBox(height: 12),
@@ -497,7 +525,8 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen>
                   backgroundColor: AppColors.primary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 onPressed: _handleDone,
                 child: Text(
@@ -519,7 +548,8 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen>
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.divider),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 icon: const Icon(Icons.share_outlined, size: 17),
                 label: Text(
@@ -540,7 +570,8 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen>
                       backgroundColor: AppColors.primary,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   );
                 },

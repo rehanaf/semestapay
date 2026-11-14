@@ -146,8 +146,9 @@ class SemestaPrimaryButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: color ?? Theme.of(context).colorScheme.primary,
         foregroundColor: foregroundColor ?? Colors.white,
-        disabledBackgroundColor: (color ?? Theme.of(context).colorScheme.primary)
-            .withValues(alpha: 0.35),
+        disabledBackgroundColor:
+            (color ?? Theme.of(context).colorScheme.primary)
+                .withValues(alpha: 0.35),
         elevation: 0,
         minimumSize: Size(expanded ? double.infinity : 0, height),
         shape: RoundedRectangleBorder(
@@ -549,7 +550,8 @@ class SemestaInfoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isError ? AppColors.error : Theme.of(context).colorScheme.primary;
+    final color =
+        isError ? AppColors.error : Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -560,7 +562,10 @@ class SemestaInfoBanner extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            icon ?? (isError ? Icons.error_outline_rounded : Icons.info_outline_rounded),
+            icon ??
+                (isError
+                    ? Icons.error_outline_rounded
+                    : Icons.info_outline_rounded),
             size: 19,
             color: color,
           ),
@@ -749,6 +754,10 @@ class SemestaKeypad extends StatelessWidget {
   final Color? backspaceColor;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final bool transactionStyle;
+  final bool showTripleZero;
+  final VoidCallback? onClear;
+  final Color? interactionColor;
 
   const SemestaKeypad({
     super.key,
@@ -758,55 +767,110 @@ class SemestaKeypad extends StatelessWidget {
     this.backspaceColor,
     this.actionLabel,
     this.onAction,
+    this.transactionStyle = false,
+    this.showTripleZero = false,
+    this.onClear,
+    this.interactionColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final keyText = AppTheme.font(
-      fontSize: 22,
-      fontWeight: FontWeight.w600,
+      fontSize: transactionStyle ? 21 : 22,
+      fontWeight: transactionStyle ? FontWeight.w700 : FontWeight.w600,
       color: AppColors.textPrimary,
     );
 
     Widget key(String value) {
-      return Expanded(
+      return Material(
+        color: Colors.transparent,
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
             onKey(value);
           },
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            height: 52,
-            alignment: Alignment.center,
+          borderRadius: BorderRadius.circular(transactionStyle ? 12 : 14),
+          splashColor: (interactionColor ?? AppColors.primary).withValues(
+            alpha: 0.12,
+          ),
+          highlightColor: (interactionColor ?? AppColors.primary).withValues(
+            alpha: 0.06,
+          ),
+          child: Ink(
+            height: transactionStyle ? 48 : 52,
             decoration: BoxDecoration(
-              color: keyColor ?? AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
+              color: keyColor ??
+                  (transactionStyle
+                      ? const Color(0xFFF7F9FC)
+                      : AppColors.surface),
+              borderRadius: BorderRadius.circular(transactionStyle ? 12 : 14),
             ),
-            child: Text(value, style: keyText),
+            child: Center(child: Text(value, style: keyText)),
           ),
         ),
       );
     }
 
     Widget backspace() {
-      return Expanded(
+      return Material(
+        color: Colors.transparent,
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
             onBackspace();
           },
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            height: 52,
-            alignment: Alignment.center,
+          onLongPress: onClear,
+          borderRadius: BorderRadius.circular(transactionStyle ? 12 : 14),
+          splashColor: (interactionColor ?? AppColors.primary).withValues(
+            alpha: 0.12,
+          ),
+          highlightColor: (interactionColor ?? AppColors.primary).withValues(
+            alpha: 0.06,
+          ),
+          child: Ink(
+            height: transactionStyle ? 48 : 52,
             decoration: BoxDecoration(
-              color: backspaceColor ?? AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
+              color: backspaceColor ??
+                  (transactionStyle
+                      ? const Color(0xFFF7F9FC)
+                      : AppColors.surface),
+              borderRadius: BorderRadius.circular(transactionStyle ? 12 : 14),
             ),
-            child: const Icon(
-              Icons.backspace_outlined,
-              size: 22,
+            child: Center(
+              child: Icon(
+                Icons.backspace_outlined,
+                size: transactionStyle ? 20 : 22,
+                color: transactionStyle
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget action() {
+      if (showTripleZero) return key('000');
+      if (actionLabel == null) return const SizedBox.expand();
+      return InkWell(
+        onTap: onAction,
+        borderRadius: BorderRadius.circular(transactionStyle ? 12 : 14),
+        child: Container(
+          height: transactionStyle ? 48 : 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: keyColor ??
+                (transactionStyle
+                    ? const Color(0xFFF7F9FC)
+                    : AppColors.surface),
+            borderRadius: BorderRadius.circular(transactionStyle ? 12 : 14),
+          ),
+          child: Text(
+            actionLabel!,
+            style: AppTheme.font(
+              fontSize: transactionStyle ? 13 : 13,
+              fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
             ),
           ),
@@ -818,35 +882,7 @@ class SemestaKeypad extends StatelessWidget {
       [key('1'), key('2'), key('3')],
       [key('4'), key('5'), key('6')],
       [key('7'), key('8'), key('9')],
-      [
-        if (actionLabel != null)
-          Expanded(
-            child: InkWell(
-              onTap: onAction,
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: (keyColor ?? AppColors.surface),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  actionLabel!,
-                  style: AppTheme.font(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          )
-        else
-          const Spacer(),
-        key('0'),
-        backspace(),
-      ],
+      [action(), key('0'), backspace()],
     ];
 
     return Column(
@@ -856,12 +892,19 @@ class SemestaKeypad extends StatelessWidget {
           Row(
             children: [
               for (var j = 0; j < rows[i].length; j++) ...[
-                if (j > 0) const SizedBox(width: 8),
-                rows[i][j],
+                if (!transactionStyle && j > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: transactionStyle
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: rows[i][j],
+                        )
+                      : rows[i][j],
+                ),
               ],
             ],
           ),
-          if (i < rows.length - 1) const SizedBox(height: 8),
+          if (i < rows.length - 1) SizedBox(height: transactionStyle ? 6 : 8),
         ],
       ],
     );

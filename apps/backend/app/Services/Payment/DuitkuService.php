@@ -24,7 +24,7 @@ class DuitkuService
      *
      * @var array<string, string>
      */
-    private const PAYMENT_METHODS = [
+    public const PAYMENT_METHODS = [
         'BC' => 'BCA Virtual Account',
         'M2' => 'Mandiri Virtual Account',
         'VA' => 'Maybank Virtual Account',
@@ -38,6 +38,26 @@ class DuitkuService
         'S1' => 'Bank Sahabat Sampoerna',
         'DM' => 'Danamon Virtual Account',
         'BV' => 'BSI Virtual Account',
+    ];
+
+    /**
+     * Prefix nomor Fixed Virtual Account bank resmi Duitku.
+     *
+     * @var array<string, string>
+     */
+    public const BANK_PREFIXES = [
+        'BC' => '70070',  // BCA
+        'M2' => '89410',  // Mandiri
+        'I1' => '98845',  // BNI
+        'BR' => '13082',  // BRI
+        'BT' => '86800',  // Permata
+        'B1' => '1199',   // CIMB Niaga
+        'VA' => '78287',  // Maybank
+        'BV' => '451',    // BSI
+        'DM' => '8899',   // Danamon
+        'AG' => '037',    // Bank Artha Graha
+        'NC' => '859',    // Bank Neo Commerce
+        'S1' => '522',    // Bank Sahabat Sampoerna
     ];
 
     private ?PaymentGatewayConfig $gateway = null;
@@ -102,6 +122,17 @@ class DuitkuService
         return route('duitku.callback');
     }
 
+    public function inquiryUrl(): string
+    {
+        $configured = $this->config('inquiry_url');
+
+        if (is_string($configured) && $configured !== '') {
+            return $configured;
+        }
+
+        return route('duitku.inquiry');
+    }
+
     public function returnUrl(): string
     {
         $configured = $this->config('return_url');
@@ -111,6 +142,79 @@ class DuitkuService
         }
 
         return (string) config('app.url', 'https://semestapay.id');
+    }
+
+    /**
+     * Hasilkan nomor Fixed Virtual Account permanen untuk seorang santri.
+     */
+    public function generateFixedVaNumber(Student $student, string $paymentMethod): string
+    {
+        $code = strtoupper($paymentMethod);
+        $prefix = self::BANK_PREFIXES[$code] ?? self::BANK_PREFIXES['BC'];
+
+        // Ambil digit angka murni dari NIS jika ada, atau gunakan ID santri
+        $identifier = preg_replace('/\D/', '', (string) $student->nis);
+        if ($identifier === '' || strlen($identifier) > 11) {
+            $identifier = (string) $student->id;
+        }
+
+        $padLength = 16 - strlen($prefix);
+        if ($padLength < 4) {
+            $padLength = 11;
+        }
+
+        return $prefix.str_pad($identifier, $padLength, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Ambil atau buat record Virtual Account statis permanen (Fixed VA) untuk santri.
+     */
+    public function getOrCreateFixedVirtualAccount(
+        Student $student,
+        ?string $paymentMethod = null,
+    ): VirtualAccount {
+        $paymentMethod = $paymentMethod !== null && $paymentMethod !== ''
+            ? strtoupper($paymentMethod)
+            : strtoupper($this->defaultPaymentMethod());
+
+        $existing = VirtualAccount::query()
+            ->where('provider', self::PROVIDER)
+            ->where('student_id', $student->id)
+            ->where('payment_code', $paymentMethod)
+            ->where('is_static', true)
+            ->latest('id')
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $accountNumber = $this->generateFixedVaNumber($student, $paymentMethod);
+
+        return VirtualAccount::create([
+            'student_id' => $student->id,
+            'provider' => self::PROVIDER,
+            'payment_code' => $paymentMethod,
+            'bank_name' => self::PAYMENT_METHODS[$paymentMethod] ?? $paymentMethod,
+            'account_number' => $accountNumber,
+            'merchant_order_id' => sprintf(
+                'FIXED%s%s%s',
+                $student->id,
+                now()->format('ymdHis'),
+                Str::upper(Str::random(4))
+            ),
+            'provider_reference' => null,
+            'amount' => 0,
+            'status' => VirtualAccountStatus::Pending->value,
+            'is_static' => true,
+            'expires_at' => now()->addYears(10),
+            'metadata' => [
+                'payment_method_name' => self::PAYMENT_METHODS[$paymentMethod] ?? $paymentMethod,
+                'customer_name' => $student->name,
+                'is_static' => true,
+                'is_open_amount' => true,
+            ],
+        ]);
     }
 
     /**
@@ -216,7 +320,7 @@ class DuitkuService
     }
 
     /**
-     * Verifikasi signature callback Duitku (HMAC SHA256).
+     * Verifikasi signature callback Duitku (mendukung HMAC SHA256 & MD5 Fixed VA).
      *
      * @param  array<string, mixed>  $data
      */
@@ -236,12 +340,55 @@ class DuitkuService
                 return false;
             }
 
-            $expected = hash_hmac('sha256', $merchantCode.$amount.$merchantOrderId, $this->apiKey());
+            $apiKey = $this->apiKey();
+
+            // 1. Dukungan HMAC-SHA256 (standard Duitku V2 API)
+            $expectedHmac = hash_hmac('sha256', $merchantCode.$amount.$merchantOrderId, $apiKey);
+            if (hash_equals(strtolower($expectedHmac), strtolower($signature))) {
+                return true;
+            }
+
+            // 2. Dukungan MD5 (standard Duitku Fixed VA & legacy)
+            $expectedMd5 = md5($merchantCode.$amount.$merchantOrderId.$apiKey);
+            if (hash_equals(strtolower($expectedMd5), strtolower($signature))) {
+                return true;
+            }
         } catch (DuitkuException) {
             return false;
         }
 
-        return hash_equals($expected, $signature);
+        return false;
+    }
+
+    /**
+     * Verifikasi signature inquiry Duitku Fixed Virtual Account (MD5).
+     * Formula: MD5(merchantCode + action + vaNo + session + apiKey)
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function verifyInquiry(array $data): bool
+    {
+        $merchantCode = (string) ($data['merchantCode'] ?? '');
+        $action = (string) ($data['action'] ?? '');
+        $vaNo = (string) ($data['vaNo'] ?? ($data['account_number'] ?? ''));
+        $session = (string) ($data['session'] ?? '');
+        $signature = (string) ($data['signature'] ?? '');
+
+        if ($merchantCode === '' || $vaNo === '' || $session === '' || $signature === '') {
+            return false;
+        }
+
+        try {
+            if (! hash_equals($this->merchantCode(), $merchantCode)) {
+                return false;
+            }
+
+            $expectedMd5 = md5($merchantCode.$action.$vaNo.$session.$this->apiKey());
+        } catch (DuitkuException) {
+            return false;
+        }
+
+        return hash_equals(strtolower($expectedMd5), strtolower($signature));
     }
 
     /**

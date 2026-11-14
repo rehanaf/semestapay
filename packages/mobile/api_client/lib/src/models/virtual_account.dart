@@ -16,6 +16,7 @@ class VirtualAccountInfo {
   final bool isOpenAmount;
   final String? paymentUrl;
   final String? expiresAt;
+  final String? createdAt;
   final bool isNew;
 
   VirtualAccountInfo({
@@ -36,6 +37,7 @@ class VirtualAccountInfo {
     this.isOpenAmount = false,
     this.paymentUrl,
     this.expiresAt,
+    this.createdAt,
     required this.isNew,
   });
 
@@ -65,6 +67,7 @@ class VirtualAccountInfo {
       isOpenAmount: va['is_open_amount'] as bool? ?? false,
       paymentUrl: va['payment_url'] as String?,
       expiresAt: va['expires_at'] as String?,
+      createdAt: va['created_at'] as String?,
       isNew: json['is_new'] as bool? ?? isNew,
     );
   }
