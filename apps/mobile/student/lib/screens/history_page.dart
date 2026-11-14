@@ -57,18 +57,21 @@ class _HistoryPageState extends State<HistoryPage> {
     'Kantin / Merchant',
     'Transfer',
     'Tagihan',
-    'Virtual Account',
   ];
 
   List<HistoryItem> get _allTransactions {
     final transactions = widget.state.mutations.map((m) {
       final isCredit = m.isCredit;
       final typeLabel = _typeLabel(m.type);
+      final isTopup = m.type == 'topup';
+      final title = isTopup
+          ? 'Isi Saldo dari Bank terkait'
+          : (m.merchant?.isNotEmpty == true
+              ? m.merchant!
+              : (m.note?.isNotEmpty == true ? m.note! : typeLabel));
       return HistoryItem(
         id: m.id,
-        title: m.merchant?.isNotEmpty == true
-            ? m.merchant!
-            : (m.note?.isNotEmpty == true ? m.note! : typeLabel),
+        title: title,
         category: m.outlet?.isNotEmpty == true
             ? m.outlet!
             : (m.note?.isNotEmpty == true ? m.note! : typeLabel),
@@ -82,25 +85,6 @@ class _HistoryPageState extends State<HistoryPage> {
         typeLabel: typeLabel,
       );
     }).toList();
-    transactions.addAll(
-      widget.state.virtualAccounts.map((virtualAccount) {
-        return HistoryItem(
-          id: virtualAccount.merchantOrderId,
-          title: 'Top Up via ${virtualAccount.bankName}',
-          category: 'Virtual Account',
-          amount: virtualAccount.amount.round(),
-          dateTime:
-              DateTime.tryParse(virtualAccount.createdAt ?? '')?.toLocal() ??
-              DateTime.now(),
-          icon: Icons.account_balance_rounded,
-          iconColor: AppColors.primary,
-          note: virtualAccount.merchantOrderId,
-          sourceOrTarget: virtualAccount.bankName,
-          typeLabel: 'Virtual Account',
-          virtualAccount: virtualAccount,
-        );
-      }),
-    );
     return transactions;
   }
 
@@ -701,24 +685,12 @@ class _HistoryPageState extends State<HistoryPage> {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Text(
-                        item.category,
-                        style: AppTheme.font(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '• $dateStr, $timeStr',
-                        style: AppTheme.font(
-                          fontSize: 11,
-                          color: AppColors.textLight,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    '$dateStr, $timeStr',
+                    style: AppTheme.font(
+                      fontSize: 11,
+                      color: AppColors.textLight,
+                    ),
                   ),
                 ],
               ),

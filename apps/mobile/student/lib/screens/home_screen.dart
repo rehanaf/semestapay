@@ -742,9 +742,12 @@ class _HomePageState extends State<_HomePage> {
     final mutations = widget.state.mutations.take(4).toList();
     final transactions = mutations.map((m) {
       final isCredit = m.isCredit;
-      final title = m.merchant?.isNotEmpty == true
-          ? m.merchant!
-          : (m.note?.isNotEmpty == true ? m.note! : _titleForMutation(m.type));
+      final isTopup = m.type == 'topup';
+      final title = isTopup
+          ? 'Isi Saldo dari Bank terkait'
+          : (m.merchant?.isNotEmpty == true
+              ? m.merchant!
+              : (m.note?.isNotEmpty == true ? m.note! : _titleForMutation(m.type)));
       final category = m.outlet?.isNotEmpty == true
           ? m.outlet!
           : _titleForMutation(m.type);
