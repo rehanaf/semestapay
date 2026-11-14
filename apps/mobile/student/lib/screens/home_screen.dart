@@ -435,22 +435,27 @@ class _HomePageState extends State<_HomePage> {
     if (n.contains('bri') || n == 'br') return 'Isi Saldo dari Bank BRI';
     if (n.contains('cimb') || n == 'b1') return 'Isi Saldo dari CIMB Niaga';
     if (n.contains('permata') || n == 'bt') return 'Isi Saldo dari Bank Permata';
-    if (n.contains('duitku')) return 'Isi Saldo Online';
-    if (n.isNotEmpty && n != 'cash' && n != 'topup') return 'Isi Saldo dari $note';
-    return 'Top Up Saldo';
+    if (n.contains('cash')) return 'Isi Saldo Tunai';
+    if (n.isNotEmpty && n != 'topup' && n != 'duitku_va' && n != 'duitku') return 'Isi Saldo dari $note';
+    return 'Isi Saldo Bank';
   }
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      physics: const ClampingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(child: _buildBalanceCard()),
-        SliverToBoxAdapter(child: _buildShortcuts()),
-        SliverToBoxAdapter(child: _buildPromoSection()),
-        SliverToBoxAdapter(child: _buildRecentTransactions()),
-        const SliverToBoxAdapter(child: SizedBox(height: 28)),
-      ],
+    return ListenableBuilder(
+      listenable: widget.state,
+      builder: (context, _) {
+        return CustomScrollView(
+          physics: const ClampingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(child: _buildBalanceCard()),
+            SliverToBoxAdapter(child: _buildShortcuts()),
+            SliverToBoxAdapter(child: _buildPromoSection()),
+            SliverToBoxAdapter(child: _buildRecentTransactions()),
+            const SliverToBoxAdapter(child: SizedBox(height: 28)),
+          ],
+        );
+      },
     );
   }
 

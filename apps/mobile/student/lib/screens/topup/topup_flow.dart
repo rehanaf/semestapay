@@ -107,27 +107,31 @@ class _TopUpScreenState extends State<TopUpScreen> {
             _searchQuery = '';
           });
         },
-        child: Container(
-          alignment: Alignment.center,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.textPrimary.withValues(alpha: 0.06),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
                     ),
                   ]
                 : null,
           ),
-          child: Text(
-            label,
-            style: AppTheme.font(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          child: Center(
+            child: Text(
+              label,
+              style: AppTheme.font(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -147,8 +151,9 @@ class _TopUpScreenState extends State<TopUpScreen> {
           (bank.abbreviation?.toLowerCase().contains(query) ?? false);
     }).toList();
 
-    // Filtered virtual accounts
+    // Filtered virtual accounts (exclude pending VAs)
     final filteredVas = _virtualAccounts.where((va) {
+      if (va.status == 'pending') return false;
       return query.isEmpty ||
           va.bankName.toLowerCase().contains(query) ||
           va.accountNumber.toLowerCase().contains(query) ||
@@ -607,7 +612,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
       );
       if (!mounted) return;
       widget.onVirtualAccountCreated?.call(virtualAccount);
-      await Navigator.push(
+      await Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) =>

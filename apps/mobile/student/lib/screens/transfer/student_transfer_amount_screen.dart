@@ -100,8 +100,7 @@ class _StudentTransferAmountScreenState
         child: SemestaAmountEntry(
           header: SemestaRecipientSummaryCard(
             name: recipient.name,
-            subtitle:
-                'NIS ${recipient.nis} • ${recipient.className ?? 'Student'}',
+            subtitle: recipient.nis,
             color: AppColors.primary,
             icon: Icons.person_rounded,
             onChange: () => Navigator.pop(context),

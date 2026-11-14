@@ -125,8 +125,7 @@ class _StudentTransferListScreenState extends State<StudentTransferListScreen> {
             (recipient) => SemestaRecipientOption(
               id: '${recipient.id}',
               name: recipient.name,
-              subtitle:
-                  '${recipient.nis} • ${recipient.className ?? 'Student'}',
+              subtitle: recipient.nis,
               color: AppColors.primary,
             ),
           )
@@ -422,7 +421,7 @@ class _StudentTransferListScreenState extends State<StudentTransferListScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'NIS ${recipient.nis} • ${recipient.className ?? 'Student'}',
+                              recipient.nis,
                               style: AppTheme.font(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
