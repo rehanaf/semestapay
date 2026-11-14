@@ -918,7 +918,7 @@ class _ProfilePageState extends State<ProfilePage> {
             size: 22, color: AppColors.textSecondary),
         onTap: _showLimitDialog,
       ),
-      const Divider(height: 1, indent: 56, color: AppColors.divider),
+      const Divider(height: 1, color: AppColors.divider),
       _buildTile(
         icon: Icons.lock_clock_rounded,
         iconColor: const Color(0xFFE67E22),
@@ -942,7 +942,7 @@ class _ProfilePageState extends State<ProfilePage> {
           },
         ),
       ),
-      const Divider(height: 1, indent: 56, color: AppColors.divider),
+      const Divider(height: 1, color: AppColors.divider),
       _buildTile(
         icon: Icons.pin_rounded,
         iconColor: AppColors.accent,
@@ -974,7 +974,7 @@ class _ProfilePageState extends State<ProfilePage> {
             size: 22, color: AppColors.textSecondary),
         onTap: _showEditProfileDialog,
       ),
-      const Divider(height: 1, indent: 56, color: AppColors.divider),
+      const Divider(height: 1, color: AppColors.divider),
       _buildTile(
         icon: Icons.fingerprint_rounded,
         iconColor: AppColors.primary,
@@ -996,7 +996,7 @@ class _ProfilePageState extends State<ProfilePage> {
           },
         ),
       ),
-      const Divider(height: 1, indent: 56, color: AppColors.divider),
+      const Divider(height: 1, color: AppColors.divider),
       _buildTile(
         icon: Icons.account_balance_rounded,
         iconColor: const Color(0xFF2E7D32),
@@ -1012,7 +1012,7 @@ class _ProfilePageState extends State<ProfilePage> {
           );
         },
       ),
-      const Divider(height: 1, indent: 56, color: AppColors.divider),
+      const Divider(height: 1, color: AppColors.divider),
       _buildTile(
         icon: Icons.devices_rounded,
         iconColor: AppColors.textSecondary,
@@ -1049,7 +1049,7 @@ class _ProfilePageState extends State<ProfilePage> {
           },
         ),
       ),
-      const Divider(height: 1, indent: 56, color: AppColors.divider),
+      const Divider(height: 1, color: AppColors.divider),
       _buildTile(
         icon: Icons.support_agent_rounded,
         iconColor: AppColors.primary,
@@ -1065,7 +1065,7 @@ class _ProfilePageState extends State<ProfilePage> {
           );
         },
       ),
-      const Divider(height: 1, indent: 56, color: AppColors.divider),
+      const Divider(height: 1, color: AppColors.divider),
       _buildTile(
         icon: Icons.description_rounded,
         iconColor: AppColors.textSecondary,
