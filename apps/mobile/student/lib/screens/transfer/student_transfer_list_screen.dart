@@ -230,8 +230,8 @@ class _StudentTransferListScreenState extends State<StudentTransferListScreen> {
                     ),
                     child: Row(
                       children: [
-                        _buildTabButton(0, 'Semua (${_recipients.length})'),
-                        _buildTabButton(1, 'Favorit (${_favoriteIds.length})'),
+                        _buildTabButton(0, 'Semua'),
+                        _buildTabButton(1, 'Favorit'),
                       ],
                     ),
                   ),

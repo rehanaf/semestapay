@@ -146,7 +146,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
                 child: Row(
                   children: [
                     _buildTabButton(0, 'Top Up'),
-                    _buildTabButton(1, 'Riwayat VA (${_virtualAccounts.length})'),
+                    _buildTabButton(1, 'Riwayat'),
                   ],
                 ),
               ),
