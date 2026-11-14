@@ -20,7 +20,10 @@ class TopUpScreen extends StatefulWidget {
 }
 
 class _TopUpScreenState extends State<TopUpScreen> {
-  int _selectedTab = 0; // 0: Top Up, 1: Riwayat VA
+  int _selectedTab = 0; // 0: Top Up, 1: Riwayat
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  String _searchQuery = '';
   List<VirtualAccountInfo> _virtualAccounts = [];
   bool _isLoadingVa = false;
 
@@ -28,6 +31,13 @@ class _TopUpScreenState extends State<TopUpScreen> {
   void initState() {
     super.initState();
     _loadVirtualAccounts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _loadVirtualAccounts() async {
@@ -90,7 +100,13 @@ class _TopUpScreenState extends State<TopUpScreen> {
     final isSelected = _selectedTab == index;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _selectedTab = index),
+        onTap: () {
+          setState(() {
+            _selectedTab = index;
+            _searchController.clear();
+            _searchQuery = '';
+          });
+        },
         child: Container(
           alignment: Alignment.center,
           decoration: BoxDecoration(
@@ -121,6 +137,24 @@ class _TopUpScreenState extends State<TopUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final query = _searchQuery.trim().toLowerCase();
+    
+    // Filtered banks
+    final filteredBanks = _banks.where((bank) {
+      return query.isEmpty ||
+          bank.name.toLowerCase().contains(query) ||
+          bank.code.toLowerCase().contains(query) ||
+          (bank.abbreviation?.toLowerCase().contains(query) ?? false);
+    }).toList();
+
+    // Filtered virtual accounts
+    final filteredVas = _virtualAccounts.where((va) {
+      return query.isEmpty ||
+          va.bankName.toLowerCase().contains(query) ||
+          va.accountNumber.toLowerCase().contains(query) ||
+          va.status.toLowerCase().contains(query);
+    }).toList();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -136,19 +170,70 @@ class _TopUpScreenState extends State<TopUpScreen> {
             Container(
               color: AppColors.surface,
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Container(
-                height: 42,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F4F9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    _buildTabButton(0, 'Top Up'),
-                    _buildTabButton(1, 'Riwayat'),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                      style: AppTheme.font(
+                        fontSize: 13,
+                        color: AppColors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: _selectedTab == 0
+                            ? 'Cari nama bank...'
+                            : 'Cari riwayat virtual account...',
+                        hintStyle: AppTheme.font(
+                          fontSize: 13,
+                          color: AppColors.textLight,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          size: 20,
+                          color: AppColors.textSecondary,
+                        ),
+                        suffixIcon: _searchController.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Hapus pencarian',
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                                icon: const Icon(Icons.close_rounded, size: 18),
+                              ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 42,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F4F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        _buildTabButton(0, 'Top Up'),
+                        _buildTabButton(1, 'Riwayat'),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -156,33 +241,110 @@ class _TopUpScreenState extends State<TopUpScreen> {
                   ? SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.all(16),
-                      child: SemestaBankSelector(
-                        banks: _banks,
-                        title: 'Pilih bank untuk Virtual Account',
-                        searchHint: 'Cari nama bank...',
-                        onSelected: (bank) async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TopUpAmountScreen(
-                                api: widget.api,
-                                bank: bank,
-                                onVirtualAccountCreated: (va) {
-                                  widget.onVirtualAccountCreated?.call(va);
-                                  _loadVirtualAccounts();
-                                },
-                              ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Pilih bank untuk Virtual Account',
+                            style: AppTheme.font(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
                             ),
-                          );
-                          _loadVirtualAccounts();
-                        },
+                          ),
+                          const SizedBox(height: 12),
+                          filteredBanks.isEmpty
+                              ? Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 40),
+                                  child: Center(
+                                    child: Text(
+                                      'Bank tidak ditemukan.',
+                                      style: AppTheme.font(
+                                        fontSize: 13,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: filteredBanks.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 10),
+                                  itemBuilder: (context, index) {
+                                    final bank = filteredBanks[index];
+                                    return InkWell(
+                                      onTap: () async {
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => TopUpAmountScreen(
+                                              api: widget.api,
+                                              bank: bank,
+                                              onVirtualAccountCreated: (va) {
+                                                widget.onVirtualAccountCreated
+                                                    ?.call(va);
+                                                _loadVirtualAccounts();
+                                              },
+                                            ),
+                                          ),
+                                        );
+                                        _loadVirtualAccounts();
+                                      },
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: SemestaCard(
+                                        padding: const EdgeInsets.all(14),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 44,
+                                              height: 44,
+                                              alignment: Alignment.center,
+                                              decoration: BoxDecoration(
+                                                color: bank.color
+                                                    .withValues(alpha: 0.12),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                bank.abbreviation ?? bank.code,
+                                                style: AppTheme.font(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: bank.color,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                bank.name,
+                                                style: AppTheme.font(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                              ),
+                                            ),
+                                            const Icon(
+                                              Icons.chevron_right_rounded,
+                                              color: AppColors.textLight,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ],
                       ),
                     )
                   : RefreshIndicator(
                       onRefresh: _loadVirtualAccounts,
                       child: _isLoadingVa
                           ? const Center(child: CircularProgressIndicator())
-                          : _virtualAccounts.isEmpty
+                          : filteredVas.isEmpty
                               ? ListView(
                                   physics: const AlwaysScrollableScrollPhysics(),
                                   children: [
@@ -190,7 +352,9 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                       height: MediaQuery.sizeOf(context).height * 0.5,
                                       child: Center(
                                         child: Text(
-                                          'Belum ada Virtual Account.',
+                                          _searchQuery.isEmpty
+                                              ? 'Belum ada Virtual Account.'
+                                              : 'Virtual Account tidak ditemukan.',
                                           style: AppTheme.font(
                                             fontSize: 13,
                                             color: AppColors.textSecondary,
@@ -203,13 +367,15 @@ class _TopUpScreenState extends State<TopUpScreen> {
                               : ListView.separated(
                                   physics: const BouncingScrollPhysics(),
                                   padding: const EdgeInsets.all(16),
-                                  itemCount: _virtualAccounts.length,
-                                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                                  itemCount: filteredVas.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 10),
                                   itemBuilder: (context, index) {
-                                    final va = _virtualAccounts[index];
-                                    final amountStr = NumberFormat('#,##0', 'en_US')
-                                        .format(va.amount)
-                                        .replaceAll(',', '.');
+                                    final va = filteredVas[index];
+                                    final amountStr = NumberFormat(
+                                      '#,##0',
+                                      'en_US',
+                                    ).format(va.amount).replaceAll(',', '.');
                                     final statusLabel = switch (va.status) {
                                       'paid' => 'Dibayar',
                                       'expired' => 'Kedaluwarsa',
@@ -227,7 +393,8 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) =>
-                                                VirtualAccountDetailScreen(virtualAccount: va),
+                                                VirtualAccountDetailScreen(
+                                                    virtualAccount: va),
                                           ),
                                         );
                                         _loadVirtualAccounts();
@@ -241,8 +408,10 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                               width: 42,
                                               height: 42,
                                               decoration: BoxDecoration(
-                                                color: AppColors.primary.withValues(alpha: 0.1),
-                                                borderRadius: BorderRadius.circular(12),
+                                                color: AppColors.primary
+                                                    .withValues(alpha: 0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
                                               child: const Icon(
                                                 Icons.account_balance_rounded,
@@ -253,14 +422,17 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     va.bankName,
                                                     style: AppTheme.font(
                                                       fontSize: 14,
-                                                      fontWeight: FontWeight.w700,
-                                                      color: AppColors.textPrimary,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: AppColors
+                                                          .textPrimary,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 2),
@@ -268,38 +440,48 @@ class _TopUpScreenState extends State<TopUpScreen> {
                                                     va.accountNumber,
                                                     style: AppTheme.font(
                                                       fontSize: 12,
-                                                      color: AppColors.textSecondary,
+                                                      color: AppColors
+                                                          .textSecondary,
                                                     ),
                                                   ),
                                                 ],
                                               ),
                                             ),
                                             Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
                                               children: [
                                                 Text(
                                                   'Rp $amountStr',
                                                   style: AppTheme.font(
                                                     fontSize: 13,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: AppColors.textPrimary,
+                                                    fontWeight:
+                                                        FontWeight.w700,
+                                                    color:
+                                                        AppColors.textPrimary,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
                                                     horizontal: 8,
                                                     vertical: 2,
                                                   ),
                                                   decoration: BoxDecoration(
-                                                    color: statusColor.withValues(alpha: 0.12),
-                                                    borderRadius: BorderRadius.circular(10),
+                                                    color: statusColor
+                                                        .withValues(
+                                                            alpha: 0.12),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
                                                   ),
                                                   child: Text(
                                                     statusLabel,
                                                     style: AppTheme.font(
                                                       fontSize: 10,
-                                                      fontWeight: FontWeight.w700,
+                                                      fontWeight:
+                                                          FontWeight.w700,
                                                       color: statusColor,
                                                     ),
                                                   ),
@@ -408,7 +590,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
 
   Widget _buildSelectedBank() {
     return SemestaCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(14,),
       child: Row(
         children: [
           Container(

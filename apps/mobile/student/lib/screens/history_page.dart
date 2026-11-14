@@ -65,7 +65,7 @@ class _HistoryPageState extends State<HistoryPage> {
       final typeLabel = _typeLabel(m.type);
       final isTopup = m.type == 'topup';
       final title = isTopup
-          ? 'Isi Saldo dari Bank terkait'
+          ? 'Top Up Saldo'
           : (m.merchant?.isNotEmpty == true
               ? m.merchant!
               : (m.note?.isNotEmpty == true ? m.note! : typeLabel));
