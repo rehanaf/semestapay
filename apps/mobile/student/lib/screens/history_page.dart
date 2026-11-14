@@ -50,6 +50,27 @@ class _HistoryPageState extends State<HistoryPage> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'Semua';
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.state.refresh();
+    });
+  }
+
+  String _topupTitle(String? note) {
+    final n = (note ?? '').toLowerCase();
+    if (n.contains('bca') || n == 'bc') return 'Isi Saldo dari Bank BCA';
+    if (n.contains('mandiri') || n == 'm2') return 'Isi Saldo dari Bank Mandiri';
+    if (n.contains('bni') || n == 'i1') return 'Isi Saldo dari Bank BNI';
+    if (n.contains('bri') || n == 'br') return 'Isi Saldo dari Bank BRI';
+    if (n.contains('cimb') || n == 'b1') return 'Isi Saldo dari CIMB Niaga';
+    if (n.contains('permata') || n == 'bt') return 'Isi Saldo dari Bank Permata';
+    if (n.contains('duitku')) return 'Isi Saldo Online';
+    if (n.isNotEmpty && n != 'cash' && n != 'topup') return 'Isi Saldo dari $note';
+    return 'Top Up Saldo';
+  }
+
   final List<String> _filters = [
     'Semua',
     'Uang Masuk',
@@ -65,7 +86,7 @@ class _HistoryPageState extends State<HistoryPage> {
       final typeLabel = _typeLabel(m.type);
       final isTopup = m.type == 'topup';
       final title = isTopup
-          ? 'Top Up Saldo'
+          ? _topupTitle(m.note)
           : (m.merchant?.isNotEmpty == true
               ? m.merchant!
               : (m.note?.isNotEmpty == true ? m.note! : typeLabel));

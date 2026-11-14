@@ -18,8 +18,37 @@ class StudentShell extends StatefulWidget {
   State<StudentShell> createState() => _StudentShellState();
 }
 
-class _StudentShellState extends State<StudentShell> {
+class _StudentShellState extends State<StudentShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.state.refresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.state.refresh();
+    }
+  }
+
+  void _changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+    widget.state.refresh();
+  }
   late final List<Widget> _pages = [
     _HomePage(
       state: widget.state,
@@ -35,19 +64,19 @@ class _StudentShellState extends State<StudentShell> {
           ),
         );
       },
-      onGoToHistory: () => setState(() => _currentIndex = 2),
+      onGoToHistory: () => _changeTab(2),
     ),
     BillsPage(
       state: widget.state,
-      onBackToHome: () => setState(() => _currentIndex = 0),
+      onBackToHome: () => _changeTab(0),
     ),
     HistoryPage(
       state: widget.state,
-      onBackToHome: () => setState(() => _currentIndex = 0),
+      onBackToHome: () => _changeTab(0),
     ),
     ProfilePage(
       state: widget.state,
-      onBackToHome: () => setState(() => _currentIndex = 0),
+      onBackToHome: () => _changeTab(0),
       onLogout: _showLogoutDialog,
     ),
   ];
@@ -123,7 +152,7 @@ class _StudentShellState extends State<StudentShell> {
         children: [
           // Avatar Lingkaran
           GestureDetector(
-            onTap: () => setState(() => _currentIndex = 3),
+            onTap: () => _changeTab(3),
             child: Container(
               width: 44,
               height: 44,
@@ -269,13 +298,13 @@ class _StudentShellState extends State<StudentShell> {
                             icon: Icons.home_rounded,
                             label: 'Beranda',
                             isActive: _currentIndex == 0,
-                            onTap: () => setState(() => _currentIndex = 0),
+                            onTap: () => _changeTab(0),
                           ),
                           _NavItem(
                             icon: Icons.receipt_rounded,
                             label: 'Tagihan',
                             isActive: _currentIndex == 1,
-                            onTap: () => setState(() => _currentIndex = 1),
+                            onTap: () => _changeTab(1),
                           ),
                         ],
                       ),
@@ -290,13 +319,13 @@ class _StudentShellState extends State<StudentShell> {
                             icon: Icons.history_rounded,
                             label: 'Riwayat',
                             isActive: _currentIndex == 2,
-                            onTap: () => setState(() => _currentIndex = 2),
+                            onTap: () => _changeTab(2),
                           ),
                           _NavItem(
                             icon: Icons.person_rounded,
                             label: 'Profil',
                             isActive: _currentIndex == 3,
-                            onTap: () => setState(() => _currentIndex = 3),
+                            onTap: () => _changeTab(3),
                           ),
                         ],
                       ),
@@ -389,6 +418,27 @@ class _HomePage extends StatefulWidget {
 
 class _HomePageState extends State<_HomePage> {
   bool _balanceVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.state.refresh();
+    });
+  }
+
+  String _topupTitle(String? note) {
+    final n = (note ?? '').toLowerCase();
+    if (n.contains('bca') || n == 'bc') return 'Isi Saldo dari Bank BCA';
+    if (n.contains('mandiri') || n == 'm2') return 'Isi Saldo dari Bank Mandiri';
+    if (n.contains('bni') || n == 'i1') return 'Isi Saldo dari Bank BNI';
+    if (n.contains('bri') || n == 'br') return 'Isi Saldo dari Bank BRI';
+    if (n.contains('cimb') || n == 'b1') return 'Isi Saldo dari CIMB Niaga';
+    if (n.contains('permata') || n == 'bt') return 'Isi Saldo dari Bank Permata';
+    if (n.contains('duitku')) return 'Isi Saldo Online';
+    if (n.isNotEmpty && n != 'cash' && n != 'topup') return 'Isi Saldo dari $note';
+    return 'Top Up Saldo';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -744,7 +794,7 @@ class _HomePageState extends State<_HomePage> {
       final isCredit = m.isCredit;
       final isTopup = m.type == 'topup';
       final title = isTopup
-          ? 'Isi Saldo dari Bank terkait'
+          ? _topupTitle(m.note)
           : (m.merchant?.isNotEmpty == true
               ? m.merchant!
               : (m.note?.isNotEmpty == true ? m.note! : _titleForMutation(m.type)));
